@@ -306,22 +306,34 @@ function buildXTicks(
 
   const first = points[0].t;
   const last = points[points.length - 1].t;
-  const ticks: { x: number; label: string; anchor: 'start' | 'middle' | 'end' }[] = [
+  const candidates: { x: number; label: string; anchor: 'start' | 'middle' | 'end' }[] = [
     { x: xOf(first), label: shortDate(first), anchor: 'start' },
   ];
 
   const interior = last - first > 20 * 864e5 ? 2 : 1;
   for (let i = 1; i <= interior; i++) {
     const t = first + ((last - first) * i) / (interior + 1);
-    ticks.push({ x: xOf(t), label: shortDate(t), anchor: 'middle' });
+    candidates.push({ x: xOf(t), label: shortDate(t), anchor: 'middle' });
   }
+  candidates.push({ x: xOf(last), label: shortDate(last), anchor: 'end' });
 
-  if (last !== first) {
-    ticks.push({ x: xOf(last), label: shortDate(last), anchor: 'end' });
+  // A short history repeats the same day, and a single snapshot puts every
+  // candidate on one spot — keep only labels that are new and have room.
+  const ticks: typeof candidates = [];
+  for (const tick of candidates) {
+    const prev = ticks.at(-1);
+    if (prev && (prev.label === tick.label || tick.x - prev.x < MIN_TICK_GAP)) {
+      continue;
+    }
+    ticks.push(tick);
   }
   return ticks;
 }
 
+const MIN_TICK_GAP = 110;
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
 function shortDate(t: number): string {
-  return new Date(t).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+  const d = new Date(t);
+  return `${d.getDate()} ${MONTHS[d.getMonth()]}`;
 }

@@ -17,8 +17,8 @@ import { EccLevel, QrCode } from '../core/qr-code';
       xmlns="http://www.w3.org/2000/svg"
       shape-rendering="crispEdges"
     >
-      <rect [attr.width]="extent()" [attr.height]="extent()" fill="#f4ecd8" />
-      <path [attr.d]="path()" fill="#1b160e" />
+      <rect [attr.width]="extent()" [attr.height]="extent()" fill="#ffffff" />
+      <path [attr.d]="path()" fill="#191817" />
     </svg>
   `,
   styleUrl: './qr-code.component.scss',

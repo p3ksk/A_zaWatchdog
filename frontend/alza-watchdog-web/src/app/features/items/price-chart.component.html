@@ -132,20 +132,23 @@
     </div>
 
     @if (srTable()) {
-      <table class="sr-only">
-        <caption>Price history</caption>
-        <thead>
-          <tr><th>Date</th><th>Price</th></tr>
-        </thead>
-        <tbody>
-          @for (p of m.snapshotPoints; track p.t) {
-            <tr>
-              <td>{{ shortDate(p.t) }}</td>
-              <td>{{ price(p.price) }}</td>
-            </tr>
-          }
-        </tbody>
-      </table>
+      <!-- Hidden via a wrapper: clipping the table itself leaves its caption visible. -->
+      <div class="sr-only">
+        <table>
+          <caption>Price history</caption>
+          <thead>
+            <tr><th>Date</th><th>Price</th></tr>
+          </thead>
+          <tbody>
+            @for (p of m.snapshotPoints; track p.t) {
+              <tr>
+                <td>{{ shortDate(p.t) }}</td>
+                <td>{{ price(p.price) }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
     }
   } @else {
     <p class="no-data">No price history yet.</p>

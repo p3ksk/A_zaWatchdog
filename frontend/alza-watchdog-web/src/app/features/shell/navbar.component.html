@@ -1,40 +1,42 @@
 <nav class="bar">
   <div class="top">
     <div class="brand">
-      <span class="mark">Alza<span class="star">*</span>Watchdog</span>
+      <span class="mark">A<span class="star">*</span>za_Watchdog</span>
     </div>
 
     <div class="actions">
       @if (canAct()) {
-        <button type="button" class="primary" (click)="watchRequested.emit()">+ Watch item</button>
+        <label class="plus">
+          <input
+            type="checkbox"
+            [checked]="hasAlzaPlus()"
+            (change)="toggleAlzaPlus($any($event.target).checked)"
+          />
+          AlzaPlus+
+        </label>
       }
 
-      <details #menu class="menu">
-        <summary>Menu</summary>
-        <div class="menu-panel">
-          @if (canAct()) {
-            <button
-              type="button"
-              class="menu-item"
-              [class.on]="hasAlzaPlus()"
-              (click)="toggleAlzaPlus(!hasAlzaPlus())"
-            >
-              <span class="menu-check">{{ hasAlzaPlus() ? '✓' : '✕' }}</span>
-              AlzaPlus+
+      <div class="group" role="group" aria-label="Account actions">
+        @if (canAct()) {
+          <button type="button" class="primary" (click)="watchRequested.emit()">+ Watch item</button>
+        }
+
+        <details #menu class="menu">
+          <summary>Menu <span class="caret" aria-hidden="true">▾</span></summary>
+          <div class="menu-panel">
+            @if (isAdmin()) {
+              <a class="menu-item" [routerLink]="adminLink()" (click)="closeMenu()">Admin</a>
+            }
+            @if (hasAccount()) {
+              <button type="button" class="menu-item" (click)="backupRequested.emit(); closeMenu()">Backup</button>
+              <button type="button" class="menu-item" (click)="keysRequested.emit(); closeMenu()">Key</button>
+            }
+            <button type="button" class="menu-item" (click)="toggleTheme()">
+              {{ isDark() ? 'Light mode' : 'Dark mode' }}
             </button>
-          }
-          @if (isAdmin()) {
-            <a class="menu-item" [routerLink]="adminLink()" (click)="closeMenu()">Admin</a>
-          }
-          @if (hasAccount()) {
-            <button type="button" class="menu-item" (click)="backupRequested.emit(); closeMenu()">Backup</button>
-            <button type="button" class="menu-item" (click)="keysRequested.emit(); closeMenu()">Key</button>
-          }
-          <button type="button" class="menu-item" (click)="toggleTheme()">
-            {{ isDark() ? 'Light mode' : 'Dark mode' }}
-          </button>
-        </div>
-      </details>
+          </div>
+        </details>
+      </div>
     </div>
   </div>
 

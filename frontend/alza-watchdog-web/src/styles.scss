@@ -86,6 +86,14 @@
 
   /* Genuine failures only — worker errors, import failures, the access-key warning. */
   --red: #a52a1e;
+
+  /* Categorical hues for the admin stat strip only — never a signal colour. */
+  --hue-1: #1d4fa0;
+  --hue-2: #0f7c74;
+  --hue-3: #6a3fb5;
+  --hue-4: #b3620a;
+  --hue-5: #2f7d32;
+  --hue-6: #b0356a;
 }
 
 @mixin dark {
@@ -114,6 +122,13 @@
   --accent-line: rgb(91 141 239 / 0.45);
 
   --red: #ff6f61;
+
+  --hue-1: #6f9bf2;
+  --hue-2: #3cc2b4;
+  --hue-3: #a98bf0;
+  --hue-4: #f0a54a;
+  --hue-5: #6cc870;
+  --hue-6: #f07aa8;
 }
 
 :root {

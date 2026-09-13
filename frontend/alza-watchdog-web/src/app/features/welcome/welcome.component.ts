@@ -8,6 +8,7 @@ import { AccountService } from '../../core/account.service';
 import { compactGuid } from '../../core/guid';
 import { describeError } from '../../core/watchdog-api.service';
 import { markBookmarkWarningSeen } from '../shell/bookmark-notice.component';
+import { QrCodeComponent } from '../../shared/qr-code.component';
 
 /** Mirrors AlzaUrl.TryParse on the server; the server remains the authority. */
 const ALZA_PRODUCT_URL = /^(https?:\/\/)?(www\.)?alza\.sk\/.+-d\d+\.htm([?#].*)?$/i;
@@ -28,7 +29,7 @@ type Step = 'intro' | 'product' | 'key';
 @Component({
   selector: 'app-welcome',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule],
+  imports: [FormsModule, QrCodeComponent],
   templateUrl: './welcome.component.html',
   styleUrl: './welcome.component.scss',
 })

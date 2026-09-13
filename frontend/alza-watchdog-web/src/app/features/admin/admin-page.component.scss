@@ -47,13 +47,23 @@
   border-bottom: 1px solid var(--rule);
   background: var(--panel);
 
+  /* Each figure gets its own hue: a top bar, a faint wash, and the number. */
   div {
+    --hue: var(--hue-1);
     padding: 13px 0 13px 16px;
     border-left: 1px solid var(--rule-soft);
+    background: linear-gradient(color-mix(in srgb, var(--hue) 9%, transparent), transparent);
+    box-shadow: inset 0 3px 0 var(--hue);
 
     &:first-child {
       padding-left: 24px;
       border-left: 0;
+    }
+
+    @for $i from 2 through 6 {
+      &:nth-child(#{$i}) {
+        --hue: var(--hue-#{$i});
+      }
     }
   }
 
@@ -69,10 +79,10 @@
   dd {
     margin: 7px 0 0;
     font-family: var(--font-mono);
-    font-size: 22px;
+    font-size: 24px;
     font-weight: 600;
     font-variant-numeric: tabular-nums;
-    color: var(--ink);
+    color: var(--hue);
   }
 }
 

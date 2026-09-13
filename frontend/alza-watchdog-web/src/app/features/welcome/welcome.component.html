@@ -1,5 +1,5 @@
 <div class="hero">
-  <h1>Alza<span class="star">*</span>Watchdog</h1>
+  <h1>A<span class="star">*</span>za_Watchdog</h1>
   <p>
     Watches alza.sk prices and remembers every change, so you can tell a real
     discount from a fake one.
@@ -79,17 +79,28 @@
           gone for good.</strong> Bookmark it before you close the tab.
         </p>
 
-        <div class="value">
-          <code>{{ accountUrl() ?? '—' }}</code>
-          <button type="button" (click)="copy()" [disabled]="!accountUrl()">
-            {{ copied() ? 'Copied' : 'Copy' }}
-          </button>
-        </div>
+        <div class="share">
+          <div class="share-link">
+            <div class="value">
+              <code>{{ accountUrl() ?? '—' }}</code>
+              <button type="button" (click)="copy()" [disabled]="!accountUrl()">
+                {{ copied() ? 'Copied' : 'Copy' }}
+              </button>
+            </div>
 
-        <p class="explain">
-          Anyone with the link can see and edit your lists, so share it only with
-          people you would give that to.
-        </p>
+            <p class="explain">
+              Or scan the code with your phone to open your list there too.
+            </p>
+            <p class="explain">
+              Anyone with the link can see and edit your lists, so share it only with
+              people you would give that to.
+            </p>
+          </div>
+
+          @if (accountUrl(); as link) {
+            <app-qr-code class="qr" [value]="link" ecc="M" label="Link to your lists" />
+          }
+        </div>
 
         @if (error(); as message) {
           <p class="status"><span class="error">! {{ message }}</span></p>

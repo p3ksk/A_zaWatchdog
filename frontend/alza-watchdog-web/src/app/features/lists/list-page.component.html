@@ -32,7 +32,8 @@
       </form>
     } @else {
       <div class="head-main">
-        <h1 class="title">{{ listName() }}</h1>
+        <!-- The active tab already shows the name; the heading stays for screen readers. -->
+        <h1 class="sr-only">{{ listName() }}</h1>
         <p class="summary" role="status">
           <b>{{ watchedCount() }}</b> {{ watchedCount() === 1 ? 'product' : 'products' }}
           @if (atLowestCount() > 0) {
