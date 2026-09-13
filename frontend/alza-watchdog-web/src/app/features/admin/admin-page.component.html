@@ -36,7 +36,7 @@
         class="tab"
         [class.active]="tab() === t.key"
         [attr.aria-selected]="tab() === t.key"
-        (click)="tab.set(t.key)"
+        (click)="selectTab(t.key)"
       >
         {{ t.label }}
         @if (t.count) {
@@ -309,6 +309,19 @@
               </li>
             }
           </ul>
+        </section>
+      }
+      @case ('status') {
+        <section>
+          <h2>Status</h2>
+          <dl class="status">
+            @for (row of status(); track row.label) {
+              <div>
+                <dt><app-tip [text]="row.hint">{{ row.label }}</app-tip></dt>
+                <dd>{{ row.value }}</dd>
+              </div>
+            }
+          </dl>
         </section>
       }
       @case ('backup') {

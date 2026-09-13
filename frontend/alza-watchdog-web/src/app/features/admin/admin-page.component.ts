@@ -8,6 +8,7 @@ import {
   AdminStats,
   AdminUser,
   AdminWorker,
+  AdminWorkerSetting,
   PriceSnapshot,
 } from '../../core/models';
 import { WatchdogApi, describeError } from '../../core/watchdog-api.service';
@@ -18,7 +19,7 @@ import { PriceChartComponent } from '../items/price-chart.component';
 import { TipComponent } from '../../shared/tip.component';
 import { PaginatorComponent } from '../../shared/paginator.component';
 
-type AdminTab = 'products' | 'accounts' | 'workers' | 'backup';
+type AdminTab = 'products' | 'accounts' | 'workers' | 'status' | 'backup';
 
 /**
  * Soonest due first. One shared interval means ordering by last check is the same
@@ -51,6 +52,7 @@ export class AdminPageComponent {
   protected readonly users = signal<AdminUser[]>([]);
   protected readonly items = signal<AdminItem[]>([]);
   protected readonly workers = signal<AdminWorker[]>([]);
+  protected readonly status = signal<AdminWorkerSetting[]>([]);
   protected readonly loading = signal(true);
   protected readonly error = signal<string | null>(null);
   protected readonly denied = signal(false);
@@ -61,6 +63,7 @@ export class AdminPageComponent {
     { key: 'products', label: 'Products', count: true },
     { key: 'accounts', label: 'Accounts', count: true },
     { key: 'workers', label: 'Background workers', count: true },
+    { key: 'status', label: 'Status', count: false },
     { key: 'backup', label: 'Backup', count: false },
   ];
 
@@ -165,17 +168,19 @@ export class AdminPageComponent {
     this.error.set(null);
 
     try {
-      const [stats, users, items, workers] = await Promise.all([
+      const [stats, users, items, workers, status] = await Promise.all([
         firstValueFrom(this.api.getAdminStats()),
         firstValueFrom(this.api.getAdminUsers()),
         firstValueFrom(this.api.getAdminItems()),
         firstValueFrom(this.api.getAdminWorkers()),
+        firstValueFrom(this.api.getAdminStatus()),
       ]);
 
       this.stats.set(stats);
       this.users.set(users);
       this.items.set(items);
       this.workers.set(workers);
+      this.status.set(status);
       this.denied.set(false);
     } catch (error) {
       // 401/403 means this key is simply not an admin — a different message from
@@ -185,6 +190,20 @@ export class AdminPageComponent {
       this.error.set(describeError(error, 'Could not load admin data.'));
     } finally {
       this.loading.set(false);
+    }
+  }
+
+  /** Status figures change by the second, so opening the tab fetches them fresh. */
+  protected async selectTab(tab: AdminTab): Promise<void> {
+    this.tab.set(tab);
+    if (tab !== 'status') {
+      return;
+    }
+
+    try {
+      this.status.set(await firstValueFrom(this.api.getAdminStatus()));
+    } catch (error) {
+      this.error.set(describeError(error, 'Could not load server status.'));
     }
   }
 

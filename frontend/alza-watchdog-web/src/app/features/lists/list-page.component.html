@@ -62,7 +62,7 @@
         }
         <label class="sort">
           <span class="sr-only">Sort</span>
-          <select [ngModel]="sort()" (ngModelChange)="sort.set($event)" name="sort">
+          <select [ngModel]="sort()" (ngModelChange)="setSort($event)" name="sort">
             @for (option of sortOptions; track option.key) {
               <option [value]="option.key">Sort: {{ option.label }}</option>
             }

@@ -6,6 +6,7 @@ import {
   AccountResponse,
   AdminItem,
   AdminWorker,
+  AdminWorkerSetting,
   AdminStats,
   AdminUser,
   ImportResult,
@@ -78,6 +79,11 @@ export class WatchdogApi {
 
   getAdminUsers(): Observable<AdminUser[]> {
     return this.http.get<AdminUser[]>('/api/admin/users');
+  }
+
+  /** Runtime figures for the API process: uptime, memory, threads. */
+  getAdminStatus(): Observable<AdminWorkerSetting[]> {
+    return this.http.get<AdminWorkerSetting[]>('/api/admin/status');
   }
 
   getAdminWorkers(): Observable<AdminWorker[]> {

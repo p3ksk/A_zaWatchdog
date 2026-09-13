@@ -1,3 +1,5 @@
+using System.Diagnostics;
+using System.Runtime.InteropServices;
 using AlzaWatchdog.Api.Admin;
 using AlzaWatchdog.Api.Auth;
 using AlzaWatchdog.Api.Contracts;
@@ -36,6 +38,31 @@ public static class AdminEndpoints
                 InactiveItems: products.Count(p => !p.IsActive)));
         })
         .WithName("AdminStats");
+
+        group.MapGet("/status", (IOptions<DatabaseOptions> database) =>
+        {
+            using var process = Process.GetCurrentProcess();
+            var started = new DateTimeOffset(process.StartTime).ToUniversalTime();
+
+            return Results.Ok(new List<AdminWorkerSettingDto>
+            {
+                new("Uptime", FormatDuration(DateTimeOffset.UtcNow - started),
+                    "How long this API process has been running. Resets on every restart or redeploy."),
+                new("Started", started.ToString("yyyy-MM-dd HH:mm 'UTC'"),
+                    "When this API process started."),
+                new("Memory (working set)", FormatMegabytes(process.WorkingSet64),
+                    "Physical memory the process holds right now, as the operating system sees it."),
+                new("Memory (GC heap)", FormatMegabytes(GC.GetTotalMemory(forceFullCollection: false)),
+                    "Memory currently allocated to .NET objects. The working set is larger because it also counts the runtime, native libraries and memory the GC has not handed back yet."),
+                new("Thread pool threads", ThreadPool.ThreadCount.ToString(),
+                    "Worker threads in the .NET thread pool. A number that keeps climbing points to blocked or runaway work."),
+                new("CPU time", FormatDuration(process.TotalProcessorTime),
+                    "Processor time used since start, summed over all cores."),
+                new(".NET runtime", RuntimeInformation.FrameworkDescription, null),
+                new("Database", database.Value.Provider == DatabaseProvider.MySql ? "MariaDB" : "SQLite", null),
+            });
+        })
+        .WithName("AdminStatus");
 
         group.MapGet("/workers", async (
             WorkerStatusRegistry workers, AppDbContext db, IOptions<WatchdogOptions> watchdog, CancellationToken ct) =>
@@ -154,6 +181,20 @@ public static class AdminEndpoints
         })
         .WithName("AdminItems");
     }
+
+    /// <summary>"3h 30m", "2d 4h", "45s" — the two largest units are enough to read at a glance.</summary>
+    private static string FormatDuration(TimeSpan span)
+    {
+        if (span.TotalDays >= 1)
+            return $"{(int)span.TotalDays}d {span.Hours}h";
+        if (span.TotalHours >= 1)
+            return $"{span.Hours}h {span.Minutes}m";
+        if (span.TotalMinutes >= 1)
+            return $"{span.Minutes}m {span.Seconds}s";
+        return $"{span.Seconds}s";
+    }
+
+    private static string FormatMegabytes(long bytes) => $"{bytes / (1024 * 1024)} MB";
 
     private static async Task<Dictionary<Guid, List<PriceSnapshotDto>>> LoadSnapshotsAsync(
         AppDbContext db, List<Guid> productIds, CancellationToken ct)

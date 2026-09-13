@@ -9,7 +9,20 @@ import { describeError } from '../../core/watchdog-api.service';
 import { compactGuid, expandGuid } from '../../core/guid';
 import { ItemCardComponent } from '../items/item-card.component';
 
-type SortKey = 'recent' | 'drop' | 'cheapest' | 'name' | 'custom';
+const SORT_KEYS = ['recent', 'drop', 'cheapest', 'name', 'custom'] as const;
+type SortKey = (typeof SORT_KEYS)[number];
+
+/** One sort choice per browser, shared by every list. */
+const SORT_STORAGE_KEY = 'alza-watchdog-sort';
+
+function readStoredSort(): SortKey {
+  try {
+    const value = localStorage.getItem(SORT_STORAGE_KEY);
+    return SORT_KEYS.find((key) => key === value) ?? 'recent';
+  } catch {
+    return 'recent';
+  }
+}
 
 @Component({
   selector: 'app-list-page',
@@ -42,7 +55,7 @@ export class ListPageComponent {
   protected readonly accountKey = this.account.key;
   protected readonly accountFailed = this.account.loadFailed;
 
-  protected readonly sort = signal<SortKey>('recent');
+  protected readonly sort = signal<SortKey>(readStoredSort());
   protected readonly expandedItemId = signal<string | null>(null);
   protected readonly notes = signal<Readonly<Record<string, string>>>({});
   protected readonly starting = signal(false);
@@ -71,6 +84,15 @@ export class ListPageComponent {
     { key: 'name', label: 'Name' },
     { key: 'custom', label: 'My order' },
   ];
+
+  protected setSort(key: SortKey): void {
+    this.sort.set(key);
+    try {
+      localStorage.setItem(SORT_STORAGE_KEY, key);
+    } catch {
+      // Storage blocked (private mode, disabled cookies): the choice just won't stick.
+    }
+  }
 
   protected readonly items = computed(() => {
     const items = [...this.store.items()];
