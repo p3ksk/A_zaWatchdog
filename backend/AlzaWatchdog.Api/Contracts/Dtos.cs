@@ -10,6 +10,8 @@ public record SaveListRequest(string Name);
 
 public record AddItemRequest(string Url);
 
+public record MoveItemRequest(Guid TargetListId);
+
 /// <summary>Every tracked item in the new manual order, oldest position first.</summary>
 public record ReorderItemsRequest(IReadOnlyList<Guid> OrderedItemIds);
 

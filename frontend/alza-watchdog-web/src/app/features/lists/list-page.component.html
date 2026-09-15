@@ -128,9 +128,11 @@
             [busy]="isBusy(item.id)"
             [note]="noteFor(item.id)"
             [expanded]="expandedItemId() === item.id"
+            [moveTargets]="moveTargets()"
             (toggleRequested)="toggleExpand(item.id)"
             (resumeRequested)="resume(item)"
             (removeRequested)="remove(item)"
+            (moveRequested)="move(item, $event)"
           />
         </li>
       }

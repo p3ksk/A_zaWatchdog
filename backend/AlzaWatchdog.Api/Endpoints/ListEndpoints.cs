@@ -190,14 +190,6 @@ public static class ListEndpoints
                         statusCode: StatusCodes.Status404NotFound);
                 }
 
-                if (result.Status == ScrapeStatus.Blocked)
-                {
-                    return Results.Problem(
-                        title: "alza.sk is not answering right now",
-                        detail: "The request was blocked. Try again in a few minutes.",
-                        statusCode: StatusCodes.Status503ServiceUnavailable);
-                }
-
                 existing = new Product
                 {
                     Id = Guid.NewGuid(),
@@ -271,6 +263,56 @@ public static class ListEndpoints
             return Results.NoContent();
         })
         .WithName("ReorderItems");
+
+        byId.MapPost("/items/{itemId:guid}/move", async (
+            Guid listId, Guid itemId, MoveItemRequest request, HttpContext http, AppDbContext db, CancellationToken ct) =>
+        {
+            var userId = UserTokenFilter.GetUserId(http);
+
+            // Both ends must be on the caller's account; either one missing is a 404,
+            // so a foreign list id is never confirmed to exist.
+            var ownedListIds = await db.WatchLists
+                .Where(l => l.UserId == userId && (l.Id == listId || l.Id == request.TargetListId))
+                .Select(l => l.Id)
+                .ToListAsync(ct);
+
+            if (!ownedListIds.Contains(listId) || !ownedListIds.Contains(request.TargetListId))
+                return Results.NotFound();
+
+            if (request.TargetListId == listId)
+            {
+                return Results.Problem(
+                    title: "Already on this list",
+                    detail: "Pick a different list to move it to.",
+                    statusCode: StatusCodes.Status400BadRequest);
+            }
+
+            var item = await db.TrackedItems
+                .FirstOrDefaultAsync(i => i.Id == itemId && i.WatchListId == listId, ct);
+
+            if (item is null)
+                return Results.NotFound();
+
+            if (await db.TrackedItems.AnyAsync(
+                    i => i.WatchListId == request.TargetListId && i.ProductId == item.ProductId, ct))
+            {
+                return Results.Problem(
+                    title: "Already on that list",
+                    detail: "The other list is already watching this product.",
+                    statusCode: StatusCodes.Status409Conflict);
+            }
+
+            // Only the list entry moves. The product and its history are shared, so
+            // nothing about the prices changes; it simply lands last in the new list.
+            item.WatchListId = request.TargetListId;
+            item.SortOrder = await db.TrackedItems
+                .Where(i => i.WatchListId == request.TargetListId)
+                .MaxAsync(i => (int?)i.SortOrder, ct) + 1 ?? 0;
+
+            await db.SaveChangesAsync(ct);
+            return Results.NoContent();
+        })
+        .WithName("MoveItem");
 
         byId.MapPost("/items/{itemId:guid}/resume", async (
             Guid listId, Guid itemId, HttpContext http, AppDbContext db, ProductImageCache images, CancellationToken ct) =>

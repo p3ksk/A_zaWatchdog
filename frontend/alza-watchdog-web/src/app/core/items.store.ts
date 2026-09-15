@@ -134,6 +134,27 @@ export class ItemsStore {
     }
   }
 
+  /** @returns an error message, or null when the item now lives on the other list. */
+  async move(id: string, targetListId: string): Promise<string | null> {
+    const listId = this._listId();
+    if (!listId) {
+      return null;
+    }
+
+    this.markBusy(id, true);
+    try {
+      await firstValueFrom(this.api.moveItem(listId, id, targetListId));
+      this._items.update((items) => items.filter((i) => i.id !== id));
+      this.account.adjustItemCount(listId, -1);
+      this.account.adjustItemCount(targetListId, 1);
+      return null;
+    } catch (error) {
+      return describeError(error, 'Could not move that item.');
+    } finally {
+      this.markBusy(id, false);
+    }
+  }
+
   /** @returns an error message, or null when the new order was saved. */
   async reorder(orderedItemIds: string[]): Promise<string | null> {
     const listId = this._listId();

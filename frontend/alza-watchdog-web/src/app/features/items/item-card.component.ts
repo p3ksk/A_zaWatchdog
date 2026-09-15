@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, output, signal } from '@angular/core';
 import { AccountService } from '../../core/account.service';
 import { ClockService } from '../../core/clock.service';
-import { TrackedItem } from '../../core/models';
+import { TrackedItem, WatchList } from '../../core/models';
 import { formatExact, formatPrice, formatRelative } from '../../core/format';
 import { priceStats } from '../../core/pricing';
 import { PriceChartComponent } from './price-chart.component';
@@ -29,10 +29,14 @@ export class ItemCardComponent {
   readonly expanded = input(false);
   /** Message from the last failed action on this row, e.g. the refresh cooldown. */
   readonly note = input<string | null>(null);
+  /** The account's other lists, which this item can be moved to. */
+  readonly moveTargets = input<readonly WatchList[]>([]);
 
   readonly toggleRequested = output<void>();
   readonly resumeRequested = output<void>();
   readonly removeRequested = output<void>();
+  /** Emits the id of the list to move this item to. */
+  readonly moveRequested = output<string>();
 
   protected readonly confirmingRemove = signal(false);
 
@@ -88,8 +92,14 @@ export class ItemCardComponent {
     ['OutOfStock', 'SoldOut', 'Discontinued'].includes(this.item().availability ?? ''),
   );
 
-  /** The row opens a chart only once there is a history to draw. */
-  protected readonly canExpand = computed(() => this.item().history.length >= 1);
+  /**
+   * The row opens once there is a history to draw, or an error to explain — an
+   * item added while alza.sk was blocking has only the latter, and still needs
+   * a way to be removed.
+   */
+  protected readonly canExpand = computed(
+    () => this.item().history.length >= 1 || this.item().lastError !== null,
+  );
 
   /**
    * The dashed AlzaPlus+ reference line is only worth drawing for a non-member:
@@ -113,6 +123,15 @@ export class ItemCardComponent {
     if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault();
       this.toggle();
+    }
+  }
+
+  protected requestMove(select: HTMLSelectElement): void {
+    const target = select.value;
+    // Back to the prompt, so a failed move leaves the picker ready to try again.
+    select.value = '';
+    if (target) {
+      this.moveRequested.emit(target);
     }
   }
 

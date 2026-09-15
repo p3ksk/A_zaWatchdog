@@ -69,6 +69,10 @@ export class WatchdogApi {
     return this.http.delete<void>(`/api/lists/${listId}/items/${itemId}`);
   }
 
+  moveItem(listId: string, itemId: string, targetListId: string): Observable<void> {
+    return this.http.post<void>(`/api/lists/${listId}/items/${itemId}/move`, { targetListId });
+  }
+
   reorderItems(listId: string, orderedItemIds: string[]): Observable<void> {
     return this.http.put<void>(`/api/lists/${listId}/items/order`, { orderedItemIds });
   }

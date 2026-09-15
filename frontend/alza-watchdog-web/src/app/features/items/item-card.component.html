@@ -63,18 +63,24 @@
 
 @if (expanded() && canExpand()) {
   <div class="detail" [class.at-low]="s.isAtLowest">
-    <app-price-chart
-      [history]="it.history"
-      [currency]="it.currency"
-      [hasAlzaPlus]="hasAlzaPlus()"
-      [plusPrice]="plusForChart()"
-      variant="watchlist"
-    />
+    @if (it.history.length) {
+      <app-price-chart
+        [history]="it.history"
+        [currency]="it.currency"
+        [hasAlzaPlus]="hasAlzaPlus()"
+        [plusPrice]="plusForChart()"
+        variant="watchlist"
+      />
+    }
 
     <div class="detail-foot">
       <span class="foot-meta">
-        {{ it.history.length }} {{ it.history.length === 1 ? 'snapshot' : 'snapshots' }} ·
-        ticks on the axis mark each check
+        @if (it.history.length) {
+          {{ it.history.length }} {{ it.history.length === 1 ? 'snapshot' : 'snapshots' }} ·
+          ticks on the axis mark each check
+        } @else {
+          not checked yet — the next sweep will read its price
+        }
       </span>
       <a class="foot-link" [href]="it.url" target="_blank" rel="noopener noreferrer">Open on alza.sk</a>
     </div>
@@ -98,6 +104,18 @@
         <button type="button" (click)="resumeRequested.emit()" [disabled]="busy()">
           {{ busy() ? 'Working…' : 'Resume watching' }}
         </button>
+      }
+
+      @if (moveTargets().length) {
+        <label class="move">
+          <span class="sr-only">Move to another list</span>
+          <select #moveSelect (change)="requestMove(moveSelect)" [disabled]="busy()">
+            <option value="" selected>Move to…</option>
+            @for (list of moveTargets(); track list.id) {
+              <option [value]="list.id">{{ list.name }}</option>
+            }
+          </select>
+        </label>
       }
 
       @if (confirmingRemove()) {

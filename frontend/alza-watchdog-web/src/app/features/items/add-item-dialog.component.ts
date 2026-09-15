@@ -31,6 +31,8 @@ export class AddItemDialogComponent {
   protected readonly working = signal(false);
   protected readonly error = signal<string | null>(null);
   protected readonly addedName = signal<string | null>(null);
+  /** alza.sk refused the first check: the item is on the list, its price is not yet. */
+  protected readonly addedUnchecked = signal(false);
 
   open(): void {
     this.reset();
@@ -53,6 +55,7 @@ export class AddItemDialogComponent {
     this.url.set('');
     this.error.set(null);
     this.addedName.set(null);
+    this.addedUnchecked.set(false);
     this.working.set(false);
   }
 
@@ -83,7 +86,9 @@ export class AddItemDialogComponent {
     } else {
       // The dialog stays open with the field cleared: adding several products in
       // one sitting is the common case, and reopening it each time is friction.
-      this.addedName.set(this.store.items()[0]?.name ?? 'Product');
+      const added = this.store.items()[0];
+      this.addedName.set(added?.name ?? added?.url ?? 'Product');
+      this.addedUnchecked.set(!!added && added.history.length === 0);
       this.url.set('');
       this.added.emit();
       this.field()?.nativeElement.focus();

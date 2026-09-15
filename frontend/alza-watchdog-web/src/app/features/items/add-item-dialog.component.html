@@ -33,7 +33,11 @@
       @if (error(); as message) {
         <span class="error">! {{ message }}</span>
       } @else if (addedName(); as name) {
-        <span class="ok">✓ Added {{ name }}. Paste another, or close.</span>
+        @if (addedUnchecked()) {
+          <span class="ok">✓ Added {{ name }}. alza.sk refused the first check, so its price fills in on the next sweep.</span>
+        } @else {
+          <span class="ok">✓ Added {{ name }}. Paste another, or close.</span>
+        }
       } @else {
         <span class="dim">
           e.g.

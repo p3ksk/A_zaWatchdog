@@ -67,6 +67,12 @@ export class ListPageComponent {
     return this.account.lists().find((l) => l.id === id)?.name ?? this.store.listName();
   });
 
+  /** Every list but this one — where an item on this page can be moved. */
+  protected readonly moveTargets = computed(() => {
+    const id = this.listId();
+    return this.account.lists().filter((l) => l.id !== id);
+  });
+
   protected readonly renaming = signal(false);
   protected readonly renameValue = signal('');
   protected readonly confirmingDelete = signal(false);
@@ -223,6 +229,10 @@ export class ListPageComponent {
 
   protected async remove(item: TrackedItem): Promise<void> {
     this.setNote(item.id, await this.store.remove(item.id));
+  }
+
+  protected async move(item: TrackedItem, targetListId: string): Promise<void> {
+    this.setNote(item.id, await this.store.move(item.id, targetListId));
   }
 
   protected dismissLoadError(): void {

@@ -86,15 +86,7 @@ public static class UserEndpoints
                         statusCode: StatusCodes.Status404NotFound);
                 }
 
-                if (result.Status == ScrapeStatus.Blocked)
-                {
-                    return Results.Problem(
-                        title: "alza.sk is not answering right now",
-                        detail: "The request was blocked. Try again in a few minutes.",
-                        statusCode: StatusCodes.Status503ServiceUnavailable);
-                }
-
-                product = new Product
+                 product = new Product
                 {
                     Id = Guid.NewGuid(),
                     ProductCode = parsed.ProductCode,
@@ -106,9 +98,9 @@ public static class UserEndpoints
                 updater.Apply(db, product, result, now);
             }
 
-            // The account is only built once the product is known to be real.
+            // The account is only built once the product is not known to be fake.
             // Everything here lands in one SaveChanges, so a URL that turns out to
-            // be a 404 — or a block — leaves no half-made account behind. That is
+            // be a 404 leaves no half-made account behind. That is
             // the whole point of not creating one when the page is merely opened.
             var user = new User { Id = Guid.NewGuid(), CreatedAt = now, LastSeenAt = now };
             var list = new WatchList
