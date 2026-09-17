@@ -7,7 +7,7 @@ export function formatPrice(value: number | null | undefined, currency: string |
 
   return new Intl.NumberFormat('sk-SK', {
     style: 'currency',
-    currency: currency ?? 'EUR',
+    currency: currency || 'EUR',
     // Prices under a euro still read as money rather than "1 €".
     minimumFractionDigits: 2,
   }).format(value);

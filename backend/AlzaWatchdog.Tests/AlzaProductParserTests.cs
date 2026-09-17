@@ -62,6 +62,30 @@ public class AlzaProductParserTests
     }
 
     [Fact]
+    public void Reads_a_discontinued_product_as_having_no_price()
+    {
+        // Trimmed from lenovo-thinkpad-e14-gen-7-black-zaruka-3-roky-onsite-d13326686
+        // after alza.sk ended its sale.
+        const string html = """
+            <html><head><script type="application/ld+json">
+            {"@type":"Product","name":"Lenovo ThinkPad E14 Gen 7 Black",
+             "offers":{"@type":"Offer","availability":"https://schema.org/Discontinued",
+               "price":0,"priceCurrency":"",
+               "priceSpecification":[{"@type":"UnitPriceSpecification",
+                 "priceType":"https://schema.org/SalePrice","price":0,"priceCurrency":""}]}}
+            </script></head></html>
+            """;
+
+        var result = AlzaProductParser.Parse(html);
+
+        Assert.Equal(ScrapeStatus.Success, result.Status);
+        Assert.Equal("Discontinued", result.Availability);
+        Assert.Null(result.Price);
+        Assert.Null(result.CouponPrice);
+        Assert.Null(result.Currency);
+    }
+
+    [Fact]
     public void Reads_the_discount_code_price()
     {
         var result = AlzaProductParser.Parse(Fixtures.CouponProduct());

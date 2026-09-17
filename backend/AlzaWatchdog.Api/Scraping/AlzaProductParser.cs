@@ -154,9 +154,9 @@ public static class AlzaProductParser
 
             if (offer.ValueKind == JsonValueKind.Object)
             {
-                price = ReadPrice(offer);
+                price = ReadPrice(offer) is > 0 and var p ? p : null;
                 couponPrice = ReadCouponPrice(offer, price);
-                currency = GetString(offer, "priceCurrency");
+                currency = GetString(offer, "priceCurrency") is { Length: > 0 } c ? c : null;
                 availability = StripSchemaPrefix(GetString(offer, "availability"));
             }
         }
@@ -192,7 +192,7 @@ public static class AlzaProductParser
             if (priceType is null || !priceType.EndsWith("SalePrice", StringComparison.OrdinalIgnoreCase))
                 continue;
 
-            if (!TryReadDecimal(entry, "price", out var value))
+            if (!TryReadDecimal(entry, "price", out var value) || value <= 0)
                 continue;
 
             if (regularPrice is not null && value >= regularPrice)
