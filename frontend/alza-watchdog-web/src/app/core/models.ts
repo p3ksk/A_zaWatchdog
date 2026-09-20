@@ -53,6 +53,10 @@ export interface AccountResponse {
   hasAlzaPlus: boolean;
   /** Whether this key is listed under Admin:Keys in server configuration. */
   isAdmin: boolean;
+  /** Where price changes are mailed. Null when this account wants none. */
+  email: string | null;
+  /** Mail only starts once the link sent to the address has been followed. */
+  emailConfirmed: boolean;
   lists: WatchList[];
 }
 

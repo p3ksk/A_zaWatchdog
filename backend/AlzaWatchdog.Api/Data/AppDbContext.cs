@@ -37,6 +37,11 @@ public abstract class AppDbContext : DbContext
         {
             e.HasKey(x => x.Id);
             e.Property(x => x.Id).ValueGeneratedNever();
+            e.Property(x => x.Email).HasMaxLength(320);
+            e.Property(x => x.EmailConfirmToken).HasMaxLength(64);
+
+            // The confirmation link is looked up by its token alone.
+            e.HasIndex(x => x.EmailConfirmToken);
         });
 
         b.Entity<WatchList>(e =>

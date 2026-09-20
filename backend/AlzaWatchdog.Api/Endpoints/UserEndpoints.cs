@@ -1,3 +1,6 @@
+using System.Net;
+using System.Net.Mail;
+using System.Security.Cryptography;
 using AlzaWatchdog.Api.Admin;
 using AlzaWatchdog.Api.Scraping;
 using AlzaWatchdog.Api.Workers;
@@ -5,6 +8,7 @@ using AlzaWatchdog.Api.Auth;
 using AlzaWatchdog.Api.Contracts;
 using AlzaWatchdog.Api.Data;
 using AlzaWatchdog.Api.Domain;
+using AlzaWatchdog.Api.Notifications;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 
@@ -37,11 +41,8 @@ public static class UserEndpoints
             db.WatchLists.Add(list);
             await db.SaveChangesAsync(ct);
 
-            return Results.Ok(new AccountDto(
-                user.Id,
-                user.HasAlzaPlus,
-                admin.Value.IsAdmin(user.Id),
-                [new WatchListDto(list.Id, list.Name, list.CreatedAt, 0)]));
+            return Results.Ok(Describe(
+                user, admin.Value, [new WatchListDto(list.Id, list.Name, list.CreatedAt, 0)]));
         })
         .WithName("CreateAccount")
         .WithSummary("Issues a new account key and its first list.");
@@ -124,11 +125,8 @@ public static class UserEndpoints
 
             await db.SaveChangesAsync(ct);
 
-            return Results.Ok(new AccountDto(
-                user.Id,
-                user.HasAlzaPlus,
-                admin.Value.IsAdmin(user.Id),
-                [new WatchListDto(list.Id, list.Name, list.CreatedAt, 1)]));
+            return Results.Ok(Describe(
+                user, admin.Value, [new WatchListDto(list.Id, list.Name, list.CreatedAt, 1)]));
         })
         .WithName("StartWithFirstProduct")
         .WithSummary("Creates an account, its first list and its first product together.");
@@ -148,7 +146,7 @@ public static class UserEndpoints
             await db.SaveChangesAsync(ct);
 
             var lists = await ListEndpoints.LoadListsAsync(db, userId, ct);
-            return Results.Ok(new AccountDto(userId, user.HasAlzaPlus, admin.Value.IsAdmin(userId), lists));
+            return Results.Ok(Describe(user, admin.Value, lists));
         })
         .WithName("GetAccount")
         .WithSummary("Validates an account key and returns its lists.");
@@ -167,10 +165,170 @@ public static class UserEndpoints
             await db.SaveChangesAsync(ct);
 
             var lists = await ListEndpoints.LoadListsAsync(db, userId, ct);
-            return Results.Ok(new AccountDto(userId, user.HasAlzaPlus, admin.Value.IsAdmin(userId), lists));
+            return Results.Ok(Describe(user, admin.Value, lists));
         })
         .AddEndpointFilter<UserTokenFilter>()
         .WithName("UpdateAccount")
         .WithSummary("Records whether this account holds an AlzaPlus+ membership.");
+
+        MapEmailEndpoints(group);
+    }
+
+    /// <summary>
+    /// Setting, clearing and confirming the address price changes are mailed to.
+    ///
+    /// An address is only believed once its owner has followed a link sent to it.
+    /// The person typing it into the box holds the account key, which says nothing
+    /// about whether they own the mailbox — without the round trip the app is a
+    /// button for mailing strangers.
+    /// </summary>
+    private static void MapEmailEndpoints(RouteGroupBuilder group)
+    {
+        group.MapPut("/email", async (
+            SetEmailRequest request,
+            HttpContext http,
+            AppDbContext db,
+            IEmailSender sender,
+            IOptions<EmailOptions> email,
+            IOptions<AdminOptions> admin,
+            CancellationToken ct) =>
+        {
+            if (!sender.IsEnabled)
+            {
+                return Results.Problem(
+                    title: "Email notifications are not available",
+                    detail: "This server has no mail account configured to send them from.",
+                    statusCode: StatusCodes.Status501NotImplemented);
+            }
+
+            var address = request.Email.Trim();
+
+            if (!IsPlausibleAddress(address))
+            {
+                return Results.Problem(
+                    title: "That does not look like an email address",
+                    detail: "Expected something like name@example.com",
+                    statusCode: StatusCodes.Status400BadRequest);
+            }
+
+            var userId = UserTokenFilter.GetUserId(http);
+            var user = await db.Users.FirstAsync(u => u.Id == userId, ct);
+
+            // Re-saving the same confirmed address re-sends the link rather than
+            // quietly doing nothing: the reason to do it is a mail that never arrived.
+            user.Email = address;
+            user.EmailConfirmedAt = null;
+            user.EmailConfirmToken = NewToken();
+            await db.SaveChangesAsync(ct);
+
+            var link = EmailLinks.Confirm(EmailLinks.PublicBase(email.Value, http.Request), user.EmailConfirmToken);
+            await sender.SendAsync(MailComposer.Confirmation(address, link), ct);
+
+            var lists = await ListEndpoints.LoadListsAsync(db, userId, ct);
+            return Results.Ok(Describe(user, admin.Value, lists));
+        })
+        .AddEndpointFilter<UserTokenFilter>()
+        .WithName("SetAccountEmail")
+        .WithSummary("Saves an address and mails it a confirmation link.");
+
+        group.MapDelete("/email", async (
+            HttpContext http,
+            AppDbContext db,
+            IOptions<AdminOptions> admin,
+            CancellationToken ct) =>
+        {
+            var userId = UserTokenFilter.GetUserId(http);
+            var user = await db.Users.FirstAsync(u => u.Id == userId, ct);
+
+            user.Email = null;
+            user.EmailConfirmedAt = null;
+            user.EmailConfirmToken = null;
+            await db.SaveChangesAsync(ct);
+
+            var lists = await ListEndpoints.LoadListsAsync(db, userId, ct);
+            return Results.Ok(Describe(user, admin.Value, lists));
+        })
+        .AddEndpointFilter<UserTokenFilter>()
+        .WithName("ClearAccountEmail")
+        .WithSummary("Stops notifications and forgets the address.");
+
+        // Followed from a mail client, so it answers with a page rather than JSON,
+        // and carries no account key: the token in the link is the whole proof.
+        group.MapGet("/email/confirm/{token}", async (
+            string token,
+            HttpContext http,
+            AppDbContext db,
+            IOptions<EmailOptions> email,
+            CancellationToken ct) =>
+        {
+            var user = await db.Users.FirstOrDefaultAsync(u => u.EmailConfirmToken == token, ct);
+
+            if (user is null)
+            {
+                // Also the second click on the same link, since the token is cleared
+                // by the first — hence a page that does not read as an error.
+                return ConfirmationPage(
+                    "Nothing to confirm",
+                    "This link has already been used, or the address has since been changed.",
+                    null);
+            }
+
+            user.EmailConfirmedAt = DateTimeOffset.UtcNow;
+            user.EmailConfirmToken = null;
+
+            // Notifications begin now. Without this the first digest would carry
+            // every change recorded since the account was created.
+            user.NotifiedThroughSnapshotId = await db.PriceSnapshots.MaxAsync(s => (long?)s.Id, ct) ?? 0;
+
+            await db.SaveChangesAsync(ct);
+
+            var home = $"{EmailLinks.PublicBase(email.Value, http.Request)}/user/{user.Id:N}";
+
+            return ConfirmationPage(
+                "Address confirmed",
+                "You will get an email when a price or availability changes on your lists.",
+                home);
+        })
+        .WithName("ConfirmAccountEmail")
+        .WithSummary("Confirms an address from the link that was mailed to it.");
+    }
+
+    private static AccountDto Describe(User user, AdminOptions admin, IReadOnlyList<WatchListDto> lists) =>
+        new(user.Id, user.HasAlzaPlus, admin.IsAdmin(user.Id), user.Email, user.EmailConfirmedAt is not null, lists);
+
+    private static string NewToken() =>
+        Convert.ToHexString(RandomNumberGenerator.GetBytes(16)).ToLowerInvariant();
+
+    /// <summary>
+    /// Enough to catch a typo, and no more. Whether an address exists is settled by
+    /// the confirmation mail arriving, not by a pattern.
+    /// </summary>
+    private static bool IsPlausibleAddress(string value) =>
+        value.Length is > 2 and <= 320
+        && MailAddress.TryCreate(value, out var parsed)
+        && parsed.Host.Contains('.');
+
+    /// <summary>
+    /// A whole page, because this opens in whatever browser the mail client hands
+    /// it to — with no app loaded around it and nothing else on screen to explain
+    /// what just happened.
+    /// </summary>
+    private static IResult ConfirmationPage(string title, string detail, string? homeUrl)
+    {
+        var link = homeUrl is null
+            ? ""
+            : $"""<p><a href="{WebUtility.HtmlEncode(homeUrl)}">Back to your lists</a></p>""";
+
+        return Results.Content($"""
+            <!doctype html>
+            <html lang="en"><head><meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1">
+            <title>{WebUtility.HtmlEncode(title)}</title></head>
+            <body style="font-family:system-ui,sans-serif;max-width:32rem;margin:4rem auto;padding:0 1rem;color:#191817">
+            <h1 style="font-size:1.4rem">{WebUtility.HtmlEncode(title)}</h1>
+            <p>{WebUtility.HtmlEncode(detail)}</p>
+            {link}
+            </body></html>
+            """, "text/html");
     }
 }

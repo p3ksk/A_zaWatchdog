@@ -1,6 +1,6 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
-import { WatchList } from './models';
+import { AccountResponse, WatchList } from './models';
 import { WatchdogApi } from './watchdog-api.service';
 
 /**
@@ -19,6 +19,8 @@ export class AccountService {
   private readonly _loadFailed = signal(false);
   private readonly _hasAlzaPlus = signal(false);
   private readonly _isAdmin = signal(false);
+  private readonly _email = signal<string | null>(null);
+  private readonly _emailConfirmed = signal(false);
 
   readonly key = this._key.asReadonly();
   readonly lists = this._lists.asReadonly();
@@ -28,6 +30,10 @@ export class AccountService {
   readonly isAdmin = this._isAdmin.asReadonly();
   /** The key in the URL does not belong to any account. */
   readonly loadFailed = this._loadFailed.asReadonly();
+  /** Where price changes are mailed, whether or not it has been confirmed yet. */
+  readonly email = this._email.asReadonly();
+  /** Nothing but the confirmation itself is sent until this is true. */
+  readonly emailConfirmed = this._emailConfirmed.asReadonly();
 
   readonly hasLists = computed(() => this._lists().length > 0);
 
@@ -46,6 +52,8 @@ export class AccountService {
     this._loadFailed.set(false);
     this._hasAlzaPlus.set(false);
     this._isAdmin.set(false);
+    this._email.set(null);
+    this._emailConfirmed.set(false);
   }
 
   /** @returns the lists on the current key, or an empty array if it is unknown. */
@@ -57,10 +65,7 @@ export class AccountService {
 
     try {
       const account = await firstValueFrom(this.api.getAccount(key));
-      this._lists.set(account.lists);
-      this._hasAlzaPlus.set(account.hasAlzaPlus);
-      this._isAdmin.set(account.isAdmin);
-      this._loadFailed.set(false);
+      this.adopt(account);
       return account.lists;
     } catch {
       this._lists.set([]);
@@ -76,10 +81,7 @@ export class AccountService {
   async startWithFirstProduct(url: string): Promise<{ key: string; lists: WatchList[] }> {
     const account = await firstValueFrom(this.api.startWithFirstProduct(url));
     this._key.set(account.userId);
-    this._lists.set(account.lists);
-    this._hasAlzaPlus.set(account.hasAlzaPlus);
-    this._isAdmin.set(account.isAdmin);
-    this._loadFailed.set(false);
+    this.adopt(account);
     return { key: account.userId, lists: account.lists };
   }
 
@@ -87,10 +89,7 @@ export class AccountService {
   async createAccount(): Promise<{ key: string; lists: WatchList[] }> {
     const account = await firstValueFrom(this.api.createAccount());
     this._key.set(account.userId);
-    this._lists.set(account.lists);
-    this._hasAlzaPlus.set(account.hasAlzaPlus);
-    this._isAdmin.set(account.isAdmin);
-    this._loadFailed.set(false);
+    this.adopt(account);
     return { key: account.userId, lists: account.lists };
   }
 
@@ -108,6 +107,28 @@ export class AccountService {
       this._hasAlzaPlus.set(previous);
       throw new Error('Could not save that setting.');
     }
+  }
+
+  /**
+   * Saves the address. The server mails it a confirmation link and sends nothing
+   * else until that is followed, so this returns with the address unconfirmed.
+   */
+  async setEmail(email: string): Promise<void> {
+    this.adopt(await firstValueFrom(this.api.setEmail(email)));
+  }
+
+  async clearEmail(): Promise<void> {
+    this.adopt(await firstValueFrom(this.api.clearEmail()));
+  }
+
+  /** Takes everything an account response says about the account it describes. */
+  private adopt(account: AccountResponse): void {
+    this._lists.set(account.lists);
+    this._hasAlzaPlus.set(account.hasAlzaPlus);
+    this._isAdmin.set(account.isAdmin);
+    this._email.set(account.email);
+    this._emailConfirmed.set(account.emailConfirmed);
+    this._loadFailed.set(false);
   }
 
   async createList(name: string): Promise<WatchList> {

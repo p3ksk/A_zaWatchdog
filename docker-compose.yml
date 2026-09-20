@@ -28,6 +28,16 @@ services:
       ConnectionStrings__Default: "server=alzawatchdog-db;port=3306;database=AlzaWatchdog;user=watchdog;password=${MARIADB_PASSWORD:-watchpw};CharSet=utf8mb4"
       Cors__Origins__0: http://localhost:4200
       Watchdog__CheckInterval: "06:00:00"
+      # Price digests. With no SMTP host the app simply never sends mail, and the
+      # notifications dialog says so rather than silently accepting an address.
+      Email__Host: ${SMTP_HOST:-}
+      Email__Port: ${SMTP_PORT:-587}
+      Email__User: ${SMTP_USER:-}
+      Email__Password: ${SMTP_PASSWORD:-}
+      Email__From: ${SMTP_FROM:-}
+      # The origin readers see. Links in a mail cannot be built from the request:
+      # behind a TLS-terminating proxy that request arrives as plain http.
+      Email__BaseUrl: ${PUBLIC_URL:-}
       #Admin__Keys__0: 5350300f91f54013befcd01ef7d72eb2
       #Watchdog__LogRequests: "true"
     depends_on:

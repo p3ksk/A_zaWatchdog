@@ -150,13 +150,29 @@ namespace AlzaWatchdog.Api.Data.Migrations
                     b.Property<long>("CreatedAt")
                         .HasColumnType("INTEGER");
 
+                    b.Property<string>("Email")
+                        .HasMaxLength(320)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("EmailConfirmToken")
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<long?>("EmailConfirmedAt")
+                        .HasColumnType("INTEGER");
+
                     b.Property<bool>("HasAlzaPlus")
                         .HasColumnType("INTEGER");
 
                     b.Property<long>("LastSeenAt")
                         .HasColumnType("INTEGER");
 
+                    b.Property<long>("NotifiedThroughSnapshotId")
+                        .HasColumnType("INTEGER");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("EmailConfirmToken");
 
                     b.ToTable("Users");
                 });

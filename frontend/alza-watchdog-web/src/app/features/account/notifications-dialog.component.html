@@ -1,0 +1,61 @@
+<dialog #dialog (close)="reset()" (click)="closeOnBackdrop($event)">
+  <div class="body">
+    <h2>Email notifications</h2>
+
+    <p class="explain">
+      One email after each check, listing every product on your lists whose price
+      or availability moved. Nothing is sent when nothing changed.
+    </p>
+
+    @if (saved(); as address) {
+      <div class="current" [class.pending]="!confirmed()">
+        <div>
+          <code>{{ address }}</code>
+          <span class="state">
+            @if (confirmed()) {
+              Confirmed — notifications are on.
+            } @else {
+              Waiting for the link in that inbox to be followed.
+            }
+          </span>
+        </div>
+        <div class="buttons">
+          @if (!confirmed()) {
+            <button type="button" (click)="resend()" [disabled]="busy()">Resend link</button>
+          }
+          <button type="button" class="danger" (click)="remove()" [disabled]="busy()">Remove</button>
+        </div>
+      </div>
+    }
+
+    <form class="set" (ngSubmit)="save()">
+      <label for="notify-email">{{ saved() ? 'Use a different address' : 'Send alerts to' }}</label>
+      <div class="value">
+        <input
+          id="notify-email"
+          name="email"
+          type="email"
+          inputmode="email"
+          autocomplete="email"
+          spellcheck="false"
+          placeholder="you@example.com"
+          [ngModel]="draft()"
+          (ngModelChange)="draft.set($event)"
+        />
+        <button type="submit" [disabled]="!canSave()">{{ busy() ? 'Working…' : 'Save' }}</button>
+      </div>
+    </form>
+
+    <p class="status" aria-live="polite">
+      @if (error(); as message) {
+        <span class="error">! {{ message }}</span>
+      } @else if (note(); as message) {
+        <span>{{ message }}</span>
+      }
+    </p>
+
+    <div class="foot">
+      <button type="button" (click)="close()">Done</button>
+    </div>
+  </div>
+</dialog>

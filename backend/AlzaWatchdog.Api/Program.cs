@@ -6,6 +6,7 @@ using AlzaWatchdog.Api.Auth;
 using AlzaWatchdog.Api.Data;
 using AlzaWatchdog.Api.Endpoints;
 using AlzaWatchdog.Api.Images;
+using AlzaWatchdog.Api.Notifications;
 using AlzaWatchdog.Api.Scraping;
 using AlzaWatchdog.Api.Workers;
 using Microsoft.EntityFrameworkCore;
@@ -49,9 +50,14 @@ builder.Services.Configure<CleanupOptions>(
 builder.Services.Configure<AdminOptions>(
     builder.Configuration.GetSection(AdminOptions.SectionName));
 
+builder.Services.Configure<EmailOptions>(
+    builder.Configuration.GetSection(EmailOptions.SectionName));
+
 builder.Services.AddScoped<UserTokenFilter>();
 builder.Services.AddScoped<AdminFilter>();
 builder.Services.AddScoped<PriceUpdateService>();
+builder.Services.AddScoped<EmailNotificationService>();
+builder.Services.AddSingleton<IEmailSender, SmtpEmailSender>();
 builder.Services.AddSingleton<ProductImageCache>();
 
 // alza.sk is behind Cloudflare bot management. Four things here are load-bearing,

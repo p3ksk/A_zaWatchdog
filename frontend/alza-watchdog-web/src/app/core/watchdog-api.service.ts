@@ -37,6 +37,15 @@ export class WatchdogApi {
     return this.http.patch<AccountResponse>('/api/users', { hasAlzaPlus });
   }
 
+  /** Saves the address and asks the server to mail it a confirmation link. */
+  setEmail(email: string): Observable<AccountResponse> {
+    return this.http.put<AccountResponse>('/api/users/email', { email });
+  }
+
+  clearEmail(): Observable<AccountResponse> {
+    return this.http.delete<AccountResponse>('/api/users/email');
+  }
+
   getLists(): Observable<WatchList[]> {
     return this.http.get<WatchList[]>('/api/lists');
   }

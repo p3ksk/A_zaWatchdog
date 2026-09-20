@@ -119,13 +119,16 @@ public static class AdminBackupEndpoints
                         i.Product.ConsecutiveFailures,
                         i.Product.IsActive,
                         i.CreatedAt,
-                        snapshots.GetValueOrDefault(i.ProductId) ?? [])).ToList())).ToList())).ToList());
+                        snapshots.GetValueOrDefault(i.ProductId) ?? [])).ToList())).ToList(),
+                u.Email,
+                u.EmailConfirmedAt)).ToList());
     }
 
     private static async Task<AccountImportResultDto> RestoreAsync(
         AppDbContext db, AccountBackupBundle bundle, CancellationToken ct)
     {
         var existing = await db.Users.Select(u => u.Id).ToHashSetAsync(ct);
+        var restored = new List<Guid>();
         var notes = new List<string>();
         var products = new Dictionary<string, Product>();
         int accounts = 0, skipped = 0, lists = 0, items = 0, snapshots = 0;
@@ -148,7 +151,10 @@ public static class AdminBackupEndpoints
                 HasAlzaPlus = account.HasAlzaPlus,
                 CreatedAt = account.CreatedAt,
                 LastSeenAt = account.LastSeenAt,
+                Email = account.Email,
+                EmailConfirmedAt = account.EmailConfirmedAt,
             });
+            restored.Add(account.Id);
             accounts++;
 
             foreach (var list in account.Lists)
@@ -205,6 +211,19 @@ public static class AdminBackupEndpoints
         }
 
         await db.SaveChangesAsync(ct);
+
+        // The restored history is old news, however new its snapshot ids are. Without
+        // this, a restored account with a confirmed address would be mailed a digest
+        // of everything that ever happened to it.
+        if (restored.Count > 0)
+        {
+            var latest = await db.PriceSnapshots.MaxAsync(s => (long?)s.Id, ct) ?? 0;
+
+            await db.Users
+                .Where(u => restored.Contains(u.Id))
+                .ExecuteUpdateAsync(u => u.SetProperty(x => x.NotifiedThroughSnapshotId, latest), ct);
+        }
+
         return new AccountImportResultDto(accounts, skipped, lists, items, snapshots, notes);
     }
 }

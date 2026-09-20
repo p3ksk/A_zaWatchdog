@@ -1,5 +1,6 @@
 using AlzaWatchdog.Api.Data;
 using AlzaWatchdog.Api.Domain;
+using AlzaWatchdog.Api.Notifications;
 using AlzaWatchdog.Api.Scraping;
 using AlzaWatchdog.Api.Workers;
 using Microsoft.Data.Sqlite;
@@ -42,6 +43,13 @@ public class PriceCheckWorkerTests : IDisposable
         services.AddSingleton<IOptions<WatchdogOptions>>(Options.Create(_options));
         services.AddSingleton<IAlzaScraper>(_scraper);
         services.AddScoped<PriceUpdateService>();
+
+        // A sweep ends by mailing what it found. No SMTP host is configured here,
+        // so the digest step finds nothing to do — but it still has to resolve.
+        services.AddSingleton<IOptions<EmailOptions>>(Options.Create(new EmailOptions()));
+        services.AddSingleton<IEmailSender, SmtpEmailSender>();
+        services.AddScoped<EmailNotificationService>();
+        services.AddLogging();
         _services = services.BuildServiceProvider();
 
         using var scope = _services.CreateScope();
@@ -87,6 +95,7 @@ public class PriceCheckWorkerTests : IDisposable
     private PriceCheckWorker CreateWorker() => new(
         _services.GetRequiredService<IServiceScopeFactory>(),
         Options.Create(_options),
+        Options.Create(new EmailOptions()),
         new WorkerStatusRegistry(),
         NullLogger<PriceCheckWorker>.Instance);
 

@@ -18,5 +18,27 @@ public class User
     /// </summary>
     public bool HasAlzaPlus { get; set; }
 
+    /// <summary>Where price notifications go. Null when this account wants none.</summary>
+    public string? Email { get; set; }
+
+    /// <summary>
+    /// Set once the address has been confirmed by following the emailed link.
+    /// Nothing but the confirmation itself is ever sent to an unconfirmed address:
+    /// the person typing it here is not necessarily the person who owns it.
+    /// </summary>
+    public DateTimeOffset? EmailConfirmedAt { get; set; }
+
+    /// <summary>The one-time secret in the confirmation link. Cleared once used.</summary>
+    public string? EmailConfirmToken { get; set; }
+
+    /// <summary>
+    /// The newest snapshot this account has already been told about. The digest
+    /// sends what is above this line and moves it up, so a failed send is retried
+    /// on the next sweep rather than silently dropped.
+    /// </summary>
+    public long NotifiedThroughSnapshotId { get; set; }
+
+    public bool WantsNotifications => Email is not null && EmailConfirmedAt is not null;
+
     public List<WatchList> Lists { get; set; } = [];
 }

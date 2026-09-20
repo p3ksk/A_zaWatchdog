@@ -1,8 +1,18 @@
 namespace AlzaWatchdog.Api.Contracts;
 
-public record AccountDto(Guid UserId, bool HasAlzaPlus, bool IsAdmin, IReadOnlyList<WatchListDto> Lists);
+public record AccountDto(
+    Guid UserId,
+    bool HasAlzaPlus,
+    bool IsAdmin,
+    /// <summary>Where price changes are mailed, confirmed or not. Null when this account wants none.</summary>
+    string? Email,
+    /// <summary>Mail only starts once the emailed link has been followed.</summary>
+    bool EmailConfirmed,
+    IReadOnlyList<WatchListDto> Lists);
 
 public record UpdateAccountRequest(bool HasAlzaPlus);
+
+public record SetEmailRequest(string Email);
 
 public record WatchListDto(Guid Id, string Name, DateTimeOffset CreatedAt, int ItemCount);
 

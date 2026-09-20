@@ -1,5 +1,6 @@
 using AlzaWatchdog.Api.Data;
 using AlzaWatchdog.Api.Domain;
+using AlzaWatchdog.Api.Notifications;
 using AlzaWatchdog.Api.Scraping;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
@@ -17,10 +18,12 @@ namespace AlzaWatchdog.Api.Workers;
 public class PriceCheckWorker(
     IServiceScopeFactory scopeFactory,
     IOptions<WatchdogOptions> options,
+    IOptions<EmailOptions> email,
     WorkerStatusRegistry status,
     ILogger<PriceCheckWorker> logger) : BackgroundService
 {
     private readonly WatchdogOptions _options = options.Value;
+    private readonly EmailOptions _email = email.Value;
 
     public const string WorkerName = "Price check";
 
@@ -113,7 +116,9 @@ public class PriceCheckWorker(
         logger.LogInformation("Checking {Count} product(s).", products.Count);
         _lastOutcome = $"Checked {products.Count} product(s)";
 
+        var blocked = false;
         var first = true;
+
         foreach (var product in products)
         {
             if (ct.IsCancellationRequested)
@@ -141,11 +146,41 @@ public class PriceCheckWorker(
                     "Blocked by alza.sk; abandoning this sweep and backing off for {Backoff}.",
                     _options.BlockedBackoff);
                 _lastOutcome = $"Blocked by alza.sk on {product.ProductCode}; backing off";
-                return true;
+                blocked = true;
+                break;
             }
         }
 
-        return false;
+        // Also after a block: the products checked before it still moved, and their
+        // news should not wait for the backoff to pass.
+        await NotifyAsync(scope, ct);
+
+        return blocked;
+    }
+
+    /// <summary>
+    /// Mails the digests for what this sweep found. Failing to send is not failing
+    /// to sweep — the prices are already recorded, and the digest keeps its place
+    /// in the queue — so it is logged here rather than thrown into the sweep loop.
+    /// </summary>
+    private async Task NotifyAsync(IServiceScope scope, CancellationToken ct)
+    {
+        try
+        {
+            var notifier = scope.ServiceProvider.GetRequiredService<EmailNotificationService>();
+            var sent = await notifier.SendPendingAsync(ct);
+
+            if (sent > 0)
+                logger.LogInformation("Sent {Count} price digest(s).", sent);
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Could not send price digests for this sweep.");
+        }
     }
 
     /// <summary>
@@ -217,6 +252,8 @@ public class PriceCheckWorker(
                     "The same single retry for the scrape someone triggers by adding a product. Shorter, because a person is waiting on it rather than a background sweep."),
                 new("Pause after failures", _options.MaxConsecutiveFailures.ToString(),
                     "After this many failed checks in a row a product is deactivated and stops being fetched, until someone resumes it from their list."),
+                new("Email digests", _email.IsConfigured ? $"via {_email.Host}" : "off — no mail account configured",
+                    "At the end of each sweep every account with a confirmed address is mailed one digest of what moved on its lists. Configured under Email in appsettings."),
             ]));
 
     internal static string Describe(TimeSpan value) => value switch

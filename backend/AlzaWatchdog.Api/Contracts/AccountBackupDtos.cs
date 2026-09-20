@@ -21,7 +21,11 @@ public record BackupAccount(
     bool HasAlzaPlus,
     DateTimeOffset CreatedAt,
     DateTimeOffset LastSeenAt,
-    IReadOnlyList<BackupList> Lists);
+    IReadOnlyList<BackupList> Lists,
+    /// <summary>Where notifications go. Optional, so bundles written before them still load.</summary>
+    string? Email = null,
+    /// <summary>When the address was confirmed; null leaves a restored address needing confirmation again.</summary>
+    DateTimeOffset? EmailConfirmedAt = null);
 
 public record BackupList(
     Guid Id,

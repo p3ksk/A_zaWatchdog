@@ -3,7 +3,7 @@
 
   <!-- The tile carries its own contrast, so the mark reads on light and dark
        browser chrome alike. A prefers-color-scheme swap would be ignored by
-       Chrome inside a favicon anyway. Cobalt is the app's --accent. -->
+       Chrome inside a favicon anyway. Cobalt is the app's accent colour. -->
   <rect width="64" height="64" rx="12" fill="#1d4fa0"/>
 
   <!-- A blocky "A": axis-aligned strokes with chamfered shoulders, so it stays

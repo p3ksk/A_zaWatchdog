@@ -30,6 +30,7 @@ export class NavbarComponent {
   readonly watchRequested = output<void>();
   readonly keysRequested = output<void>();
   readonly backupRequested = output<void>();
+  readonly notificationsRequested = output<void>();
 
   private readonly menu = viewChild<ElementRef<HTMLDetailsElement>>('menu');
 

@@ -1,0 +1,124 @@
+dialog {
+  border: 1px solid var(--rule-strong);
+  border-radius: 3px;
+  background: var(--panel);
+  color: var(--ink);
+  padding: 0;
+  width: min(34rem, calc(100vw - 2rem));
+
+  &::backdrop {
+    background: rgb(0 0 0 / 0.5);
+  }
+}
+
+.body {
+  padding: 1.25rem;
+  display: grid;
+  gap: 1.1rem;
+}
+
+h2 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.explain {
+  margin: 0;
+  color: var(--ink-dim);
+  font-size: 12px;
+}
+
+/* The saved address, and which of the two states it is in. */
+.current {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.7rem 0.8rem;
+  border: 1px solid var(--rule-mid);
+  background: var(--panel-sunken);
+
+  code {
+    display: block;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    word-break: break-all;
+  }
+
+  .state {
+    display: block;
+    margin-top: 0.2rem;
+    color: var(--ink-dim);
+    font-size: 12px;
+  }
+
+  /* Unconfirmed is a waiting state, not a failure, so it is marked without alarm. */
+  &.pending .state {
+    color: var(--hue-4);
+  }
+}
+
+.buttons {
+  display: flex;
+  gap: 0.4rem;
+}
+
+label {
+  display: block;
+  margin-bottom: 0.35rem;
+  font-size: 12px;
+  color: var(--ink-mid);
+}
+
+.value {
+  display: flex;
+  gap: 0.5rem;
+
+  input {
+    flex: 1 1 auto;
+    min-width: 0;
+    padding: 9px 12px;
+    border: 1px solid var(--rule-mid);
+    background: var(--panel);
+    color: var(--ink);
+    font: inherit;
+    font-size: 13px;
+  }
+}
+
+button {
+  padding: 9px 14px;
+  border: 1px solid var(--rule-strong);
+  background: var(--chrome);
+  color: var(--ink);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
+
+  &.danger {
+    border-color: var(--red);
+    color: var(--red);
+  }
+}
+
+.status {
+  margin: 0;
+  min-height: 1.2em;
+  font-size: 12px;
+  color: var(--ink-dim);
+
+  .error {
+    color: var(--red);
+  }
+}
+
+.foot {
+  display: flex;
+  justify-content: flex-end;
+}

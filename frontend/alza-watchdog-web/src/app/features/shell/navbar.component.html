@@ -30,6 +30,9 @@
             @if (hasAccount()) {
               <button type="button" class="menu-item" (click)="backupRequested.emit(); closeMenu()">Backup</button>
               <button type="button" class="menu-item" (click)="keysRequested.emit(); closeMenu()">Key</button>
+              <button type="button" class="menu-item" (click)="notificationsRequested.emit(); closeMenu()">
+                Notifications
+              </button>
             }
             <button type="button" class="menu-item" (click)="toggleTheme()">
               {{ isDark() ? 'Light mode' : 'Dark mode' }}
