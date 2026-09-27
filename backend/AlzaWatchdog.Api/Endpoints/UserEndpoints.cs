@@ -221,6 +221,7 @@ public static class UserEndpoints
             IEmailSender sender,
             IOptions<EmailOptions> email,
             IOptions<AdminOptions> admin,
+            ILoggerFactory loggers,
             CancellationToken ct) =>
         {
             if (!sender.IsEnabled)
@@ -249,10 +250,25 @@ public static class UserEndpoints
             user.Email = address;
             user.EmailConfirmedAt = null;
             user.EmailConfirmToken = NewToken();
-            await db.SaveChangesAsync(ct);
-
+            
             var link = EmailLinks.Confirm(EmailLinks.PublicBase(email.Value, http.Request), user.EmailConfirmToken);
-            await sender.SendAsync(MailComposer.Confirmation(address, link), ct);
+
+            try
+            {
+                await sender.SendAsync(MailComposer.Confirmation(address, link), ct);
+            }
+            catch (Exception ex) when (!ct.IsCancellationRequested)
+            {
+                loggers.CreateLogger("AlzaWatchdog.Api.Email")
+                    .LogError(ex, "Could not send the confirmation mail for account {UserId}.", userId);
+
+                return Results.Problem(
+                    title: "Could not send the confirmation email",
+                    detail: "The mail server did not accept it. Try again later.",
+                    statusCode: StatusCodes.Status502BadGateway);
+            }
+
+            await db.SaveChangesAsync(ct);
 
             var lists = await ListEndpoints.LoadListsAsync(db, userId, ct);
             return Results.Ok(Describe(user, admin.Value, lists));

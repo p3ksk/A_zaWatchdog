@@ -1,4 +1,3 @@
-using AlzaWatchdog.Api.Notifications;
 using MailKit.Net.Smtp;
 using MailKit.Security;
 using Microsoft.Extensions.Options;
@@ -36,12 +35,9 @@ public class SmtpEmailSender(IOptions<EmailOptions> options, ILogger<SmtpEmailSe
             TextBody = message.TextBody,
             HtmlBody = message.HtmlBody,
         }.ToMessageBody();
+        
+        using var client = new SmtpClient { Timeout = 20_000 };
 
-        using var client = new SmtpClient();
-
-        // Auto picks STARTTLS on 587 and implicit TLS on 465, which between them
-        // cover what providers actually offer, so the port is the only thing a
-        // deployment has to get right.
         await client.ConnectAsync(_options.Host, _options.Port, SecureSocketOptions.Auto, ct);
 
         if (!string.IsNullOrWhiteSpace(_options.User))
