@@ -26,7 +26,7 @@ public class EmailNotificationTests : IDisposable
     private readonly EmailOptions _options = new()
     {
         Host = "smtp.example.com",
-        From = "watchdog@example.com",
+        User = "watchdog@example.com",
         BaseUrl = "https://watchdog.example.com",
     };
 

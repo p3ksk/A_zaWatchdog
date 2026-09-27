@@ -13,15 +13,10 @@ public class EmailOptions
 
     public int Port { get; set; } = 587;
 
+    /// <summary>The login, which is also the address mail is sent from.</summary>
     public string? User { get; set; }
 
     public string? Password { get; set; }
-
-    /// <summary>The From address. Falls back to <see cref="User"/> when that is an address.</summary>
-    public string? From { get; set; }
-
-    /// <summary>The name shown beside the From address.</summary>
-    public string FromName { get; set; } = "Alza Watchdog";
 
     /// <summary>
     /// Public origin of the site, used to build the confirmation link. Only needed
@@ -31,9 +26,6 @@ public class EmailOptions
     /// </summary>
     public string? BaseUrl { get; set; }
 
-    /// <summary>Nothing is sent until there is a host to send it through and an address to send it from.</summary>
-    public bool IsConfigured =>
-        !string.IsNullOrWhiteSpace(Host) && !string.IsNullOrWhiteSpace(FromAddress);
-
-    public string? FromAddress => string.IsNullOrWhiteSpace(From) ? User : From;
+    /// <summary>Nothing is sent until there is a host to send it through.</summary>
+    public bool IsConfigured => !string.IsNullOrWhiteSpace(Host);
 }

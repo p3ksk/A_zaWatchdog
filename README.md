@@ -58,10 +58,11 @@ notifications dialog says so instead of accepting an address it cannot use.
 
 ```bash
 SMTP_HOST=smtp.example.com SMTP_USER=watchdog@example.com SMTP_PASSWORD=… \
-SMTP_FROM=watchdog@example.com PUBLIC_URL=https://watchdog.example.com \
+PUBLIC_URL=https://watchdog.example.com \
 podman-compose up -d
 ```
 
+Mail is sent from `SMTP_USER`, so it has to be the account's full address.
 `PUBLIC_URL` is what the links in those emails are built from. It cannot be taken
 from the request: behind a proxy that terminates TLS the request reaches the API
 as plain http on an internal hostname.

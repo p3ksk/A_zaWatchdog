@@ -34,7 +34,6 @@ services:
       Email__Port: ${SMTP_PORT:-587}
       Email__User: ${SMTP_USER:-}
       Email__Password: ${SMTP_PASSWORD:-}
-      Email__From: ${SMTP_FROM:-}
       # The origin readers see. Links in a mail cannot be built from the request:
       # behind a TLS-terminating proxy that request arrives as plain http.
       Email__BaseUrl: ${PUBLIC_URL:-}

@@ -27,7 +27,7 @@ public class SmtpEmailSender(IOptions<EmailOptions> options, ILogger<SmtpEmailSe
         }
 
         var mail = new MimeMessage();
-        mail.From.Add(new MailboxAddress(_options.FromName, _options.FromAddress));
+        mail.From.Add(new MailboxAddress("A*za Watchdog", _options.User));
         mail.To.Add(MailboxAddress.Parse(message.To));
         mail.Subject = message.Subject;
         mail.Body = new BodyBuilder
@@ -43,7 +43,19 @@ public class SmtpEmailSender(IOptions<EmailOptions> options, ILogger<SmtpEmailSe
         if (!string.IsNullOrWhiteSpace(_options.User))
             await client.AuthenticateAsync(_options.User, _options.Password, ct);
 
-        await client.SendAsync(mail, ct);
+        try
+        {
+            await client.SendAsync(mail, ct);
+        }
+        catch (SmtpCommandException ex)
+        {
+            // The server's own text rarely says which address it objected to.
+            logger.LogWarning(
+                "Mail server refused {Stage} (mailbox {Mailbox}) sending as {From} to {To}.",
+                ex.ErrorCode, ex.Mailbox?.Address, _options.User, message.To);
+            throw;
+        }
+
         await client.DisconnectAsync(true, ct);
 
         logger.LogInformation("Sent \"{Subject}\" to {To}.", message.Subject, message.To);

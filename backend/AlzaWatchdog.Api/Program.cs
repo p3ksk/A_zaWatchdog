@@ -50,8 +50,14 @@ builder.Services.Configure<CleanupOptions>(
 builder.Services.Configure<AdminOptions>(
     builder.Configuration.GetSection(AdminOptions.SectionName));
 
-builder.Services.Configure<EmailOptions>(
-    builder.Configuration.GetSection(EmailOptions.SectionName));
+// Mail is sent as the login. A bare user name there would be rejected at
+// MAIL FROM, long after startup, so it is refused here instead.
+builder.Services.AddOptions<EmailOptions>()
+    .Bind(builder.Configuration.GetSection(EmailOptions.SectionName))
+    .Validate(
+        o => string.IsNullOrWhiteSpace(o.Host) || o.User?.Contains('@') == true,
+        "Email:Host is set but Email:User (SMTP_USER) is not an address to send from, such as watchdog@example.com.")
+    .ValidateOnStart();
 
 builder.Services.AddScoped<UserTokenFilter>();
 builder.Services.AddScoped<AdminFilter>();
