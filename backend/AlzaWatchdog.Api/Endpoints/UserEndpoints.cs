@@ -2,13 +2,13 @@ using System.Net;
 using System.Net.Mail;
 using System.Security.Cryptography;
 using AlzaWatchdog.Api.Admin;
-using AlzaWatchdog.Api.Scraping;
-using AlzaWatchdog.Api.Workers;
 using AlzaWatchdog.Api.Auth;
 using AlzaWatchdog.Api.Contracts;
 using AlzaWatchdog.Api.Data;
 using AlzaWatchdog.Api.Domain;
 using AlzaWatchdog.Api.Notifications;
+using AlzaWatchdog.Api.Scraping;
+using AlzaWatchdog.Api.Workers;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 
@@ -25,7 +25,14 @@ public static class UserEndpoints
         group.MapPost("/", async (AppDbContext db, IOptions<AdminOptions> admin, CancellationToken ct) =>
         {
             var now = DateTimeOffset.UtcNow;
-            var user = new User { Id = Guid.NewGuid(), CreatedAt = now, LastSeenAt = now };
+            var user = new User
+            {
+                Id = Guid.NewGuid(),
+                CreatedAt = now,
+                LastSeenAt = now,
+                // Nothing that happened before the account existed is news to it.
+                SeenThroughSnapshotId = await db.PriceSnapshots.MaxAsync(s => (long?)s.Id, ct) ?? 0,
+            };
 
             // Every account starts with one list, so the app always has somewhere
             // to send the browser rather than an empty "pick a list" state.
@@ -103,7 +110,14 @@ public static class UserEndpoints
             // Everything here lands in one SaveChanges, so a URL that turns out to
             // be a 404 leaves no half-made account behind. That is
             // the whole point of not creating one when the page is merely opened.
-            var user = new User { Id = Guid.NewGuid(), CreatedAt = now, LastSeenAt = now };
+            var user = new User
+            {
+                Id = Guid.NewGuid(),
+                CreatedAt = now,
+                LastSeenAt = now,
+                // Nothing that happened before the account existed is news to it.
+                SeenThroughSnapshotId = await db.PriceSnapshots.MaxAsync(s => (long?)s.Id, ct) ?? 0,
+            };
             var list = new WatchList
             {
                 Id = Guid.NewGuid(),
@@ -172,6 +186,22 @@ public static class UserEndpoints
         .WithSummary("Records whether this account holds an AlzaPlus+ membership.");
 
         MapEmailEndpoints(group);
+
+        group.MapGet("/news", async (HttpContext http, AppDbContext db, CancellationToken ct) =>
+            Results.Ok(await NewsQuery.LoadAsync(db, UserTokenFilter.GetUserId(http), ct)))
+        .AddEndpointFilter<UserTokenFilter>()
+        .WithName("GetNews")
+        .WithSummary("The newest reading of each product that changed since the bell was last opened.");
+
+        group.MapPost("/news/seen", async (
+            MarkNewsSeenRequest request, HttpContext http, AppDbContext db, CancellationToken ct) =>
+        {
+            await NewsQuery.MarkSeenAsync(db, UserTokenFilter.GetUserId(http), request.ThroughSnapshotId, ct);
+            return Results.NoContent();
+        })
+        .AddEndpointFilter<UserTokenFilter>()
+        .WithName("MarkNewsSeen")
+        .WithSummary("Clears the bell up to the point it was showing.");
     }
 
     /// <summary>
@@ -294,7 +324,7 @@ public static class UserEndpoints
     }
 
     private static AccountDto Describe(User user, AdminOptions admin, IReadOnlyList<WatchListDto> lists) =>
-        new(user.Id, user.HasAlzaPlus, admin.IsAdmin(user.Id), user.Email, user.EmailConfirmedAt is not null, lists);
+        new(user.Id, user.HasAlzaPlus, admin.IsAdmin(user.Id), user.Email is not null, user.EmailConfirmedAt is not null, lists);
 
     private static string NewToken() =>
         Convert.ToHexString(RandomNumberGenerator.GetBytes(16)).ToLowerInvariant();

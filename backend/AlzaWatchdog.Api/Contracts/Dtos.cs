@@ -4,8 +4,12 @@ public record AccountDto(
     Guid UserId,
     bool HasAlzaPlus,
     bool IsAdmin,
-    /// <summary>Where price changes are mailed, confirmed or not. Null when this account wants none.</summary>
-    string? Email,
+    /// <summary>
+    /// Whether an address is on file, confirmed or not. The address itself is never
+    /// sent back: the account key is the only credential, and whoever holds a leaked
+    /// link should not learn the owner's mailbox from it.
+    /// </summary>
+    bool HasEmail,
     /// <summary>Mail only starts once the emailed link has been followed.</summary>
     bool EmailConfirmed,
     IReadOnlyList<WatchListDto> Lists);
@@ -31,6 +35,25 @@ public record PriceSnapshotDto(
     decimal? CouponPrice,
     string? Availability,
     DateTimeOffset CapturedAt);
+
+/// <summary>
+/// One product that recorded a new reading since the bell was last opened. Only the
+/// newest reading is given, plus the one before it so the change can be shown.
+/// </summary>
+public record NewsItemDto(
+    Guid ItemId,
+    Guid ListId,
+    string ListName,
+    string? Name,
+    string Url,
+    string? Currency,
+    PriceSnapshotDto Latest,
+    PriceSnapshotDto? Previous);
+
+/// <param name="ThroughSnapshotId">Sent back when the bell is opened, to mark exactly this much as seen.</param>
+public record NewsDto(long ThroughSnapshotId, IReadOnlyList<NewsItemDto> Items);
+
+public record MarkNewsSeenRequest(long ThroughSnapshotId);
 
 /// <summary>A list plus everything needed to render it in one request.</summary>
 public record WatchListDetailDto(Guid Id, string Name, IReadOnlyList<TrackedItemDto> Items);

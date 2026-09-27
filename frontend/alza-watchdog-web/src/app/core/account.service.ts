@@ -1,6 +1,7 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { AccountResponse, WatchList } from './models';
+import { NewsService } from './news.service';
 import { WatchdogApi } from './watchdog-api.service';
 
 /**
@@ -13,13 +14,14 @@ import { WatchdogApi } from './watchdog-api.service';
 @Injectable({ providedIn: 'root' })
 export class AccountService {
   private readonly api = inject(WatchdogApi);
+  private readonly news = inject(NewsService);
 
   private readonly _key = signal<string | null>(null);
   private readonly _lists = signal<WatchList[]>([]);
   private readonly _loadFailed = signal(false);
   private readonly _hasAlzaPlus = signal(false);
   private readonly _isAdmin = signal(false);
-  private readonly _email = signal<string | null>(null);
+  private readonly _hasEmail = signal(false);
   private readonly _emailConfirmed = signal(false);
 
   readonly key = this._key.asReadonly();
@@ -30,8 +32,8 @@ export class AccountService {
   readonly isAdmin = this._isAdmin.asReadonly();
   /** The key in the URL does not belong to any account. */
   readonly loadFailed = this._loadFailed.asReadonly();
-  /** Where price changes are mailed, whether or not it has been confirmed yet. */
-  readonly email = this._email.asReadonly();
+  /** Whether an address is on file, confirmed or not. Its value is never shown. */
+  readonly hasEmail = this._hasEmail.asReadonly();
   /** Nothing but the confirmation itself is sent until this is true. */
   readonly emailConfirmed = this._emailConfirmed.asReadonly();
 
@@ -52,8 +54,9 @@ export class AccountService {
     this._loadFailed.set(false);
     this._hasAlzaPlus.set(false);
     this._isAdmin.set(false);
-    this._email.set(null);
+    this._hasEmail.set(false);
     this._emailConfirmed.set(false);
+    this.news.reset();
   }
 
   /** @returns the lists on the current key, or an empty array if it is unknown. */
@@ -66,6 +69,8 @@ export class AccountService {
     try {
       const account = await firstValueFrom(this.api.getAccount(key));
       this.adopt(account);
+      // Refreshed alongside the lists: both are "what has this account got now".
+      void this.news.load();
       return account.lists;
     } catch {
       this._lists.set([]);
@@ -126,7 +131,7 @@ export class AccountService {
     this._lists.set(account.lists);
     this._hasAlzaPlus.set(account.hasAlzaPlus);
     this._isAdmin.set(account.isAdmin);
-    this._email.set(account.email);
+    this._hasEmail.set(account.hasEmail);
     this._emailConfirmed.set(account.emailConfirmed);
     this._loadFailed.set(false);
   }

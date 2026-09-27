@@ -9,6 +9,8 @@ import { describeError } from '../../core/watchdog-api.service';
  * An address is never believed on the strength of being typed here: the server
  * mails it a link and stays silent until that link is followed, so this dialog's
  * main job is to be clear about which of the two states the address is in.
+ * The address itself is never shown: holding the account link is not proof of
+ * owning the mailbox, so the server only says whether one is on file.
  */
 @Component({
   selector: 'app-notifications-dialog',
@@ -21,7 +23,7 @@ export class NotificationsDialogComponent {
   private readonly account = inject(AccountService);
   private readonly dialog = viewChild.required<ElementRef<HTMLDialogElement>>('dialog');
 
-  protected readonly saved = this.account.email;
+  protected readonly saved = this.account.hasEmail;
   protected readonly confirmed = this.account.emailConfirmed;
 
   protected readonly draft = signal('');
@@ -54,16 +56,9 @@ export class NotificationsDialogComponent {
     this.note.set(null);
   }
 
+  /** Also how a link that never arrived is re-sent: every save mints a new one. */
   protected async save(): Promise<void> {
     await this.run(this.draft().trim(), 'Check that inbox for the confirmation link.');
-  }
-
-  /** For a link that never arrived: the same call, so the server mints a new one. */
-  protected async resend(): Promise<void> {
-    const address = this.saved();
-    if (address) {
-      await this.run(address, 'Sent again — check that inbox.');
-    }
   }
 
   protected async remove(): Promise<void> {

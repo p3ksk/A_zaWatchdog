@@ -28,7 +28,7 @@ h2 {
   font-size: 12px;
 }
 
-/* The saved address, and which of the two states it is in. */
+/* That an address is saved, and which of the two states it is in. */
 .current {
   display: flex;
   flex-wrap: wrap;
@@ -39,11 +39,9 @@ h2 {
   border: 1px solid var(--rule-mid);
   background: var(--panel-sunken);
 
-  code {
+  strong {
     display: block;
-    font-family: var(--font-mono);
     font-size: 13px;
-    word-break: break-all;
   }
 
   .state {

@@ -214,14 +214,16 @@ public static class AdminBackupEndpoints
 
         // The restored history is old news, however new its snapshot ids are. Without
         // this, a restored account with a confirmed address would be mailed a digest
-        // of everything that ever happened to it.
+        // of everything that ever happened to it, and its bell would ring for all of it.
         if (restored.Count > 0)
         {
             var latest = await db.PriceSnapshots.MaxAsync(s => (long?)s.Id, ct) ?? 0;
 
             await db.Users
                 .Where(u => restored.Contains(u.Id))
-                .ExecuteUpdateAsync(u => u.SetProperty(x => x.NotifiedThroughSnapshotId, latest), ct);
+                .ExecuteUpdateAsync(u => u
+                    .SetProperty(x => x.NotifiedThroughSnapshotId, latest)
+                    .SetProperty(x => x.SeenThroughSnapshotId, latest), ct);
         }
 
         return new AccountImportResultDto(accounts, skipped, lists, items, snapshots, notes);

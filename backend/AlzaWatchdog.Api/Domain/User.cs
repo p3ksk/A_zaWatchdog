@@ -38,6 +38,13 @@ public class User
     /// </summary>
     public long NotifiedThroughSnapshotId { get; set; }
 
+    /// <summary>
+    /// The newest snapshot this account has seen in the app's notification bell.
+    /// Everything above it is shown as new; opening the bell moves it up. Kept on
+    /// the server so every device holding the key agrees on what is new.
+    /// </summary>
+    public long SeenThroughSnapshotId { get; set; }
+
     public bool WantsNotifications => Email is not null && EmailConfirmedAt is not null;
 
     public List<WatchList> Lists { get; set; } = [];

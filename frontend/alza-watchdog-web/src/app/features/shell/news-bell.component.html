@@ -1,0 +1,44 @@
+<details #panel class="bell" (toggle)="onToggle(panel.open)">
+  <summary [attr.aria-label]="label()" [title]="label()">
+    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+      <path
+        d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10.3 21a1.94 1.94 0 0 0 3.4 0"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      />
+    </svg>
+    @if (count() > 0) {
+      <span class="badge" aria-hidden="true">{{ count() > 99 ? '99+' : count() }}</span>
+    }
+  </summary>
+
+  <div class="panel">
+    <p class="heading">Since you last looked</p>
+
+    @for (row of rows(); track row.item.itemId) {
+      <a class="row" [routerLink]="listLink(row.item.listId)" (click)="close()">
+        <span class="name">{{ row.item.name ?? row.item.url }}</span>
+        <span class="figures">
+          <span class="price">{{ row.price }}</span>
+          @if (row.change) {
+            <span class="change" [class.drop]="row.isDrop">{{ row.change }}</span>
+          }
+          @if (row.availability) {
+            <span class="availability">{{ row.availability }}</span>
+          }
+        </span>
+        <span class="meta">
+          {{ row.item.listName }} ·
+          <time [attr.datetime]="row.item.latest.capturedAt" [title]="exact(row.item.latest.capturedAt)">
+            {{ relative(row.item.latest.capturedAt) }}
+          </time>
+        </span>
+      </a>
+    } @empty {
+      <p class="empty">Nothing new since you last looked.</p>
+    }
+  </div>
+</details>

@@ -177,6 +177,9 @@ namespace AlzaWatchdog.Api.Data.Migrations.MySql
                     b.Property<long>("NotifiedThroughSnapshotId")
                         .HasColumnType("bigint");
 
+                    b.Property<long>("SeenThroughSnapshotId")
+                        .HasColumnType("bigint");
+
                     b.HasKey("Id");
 
                     b.HasIndex("EmailConfirmToken");

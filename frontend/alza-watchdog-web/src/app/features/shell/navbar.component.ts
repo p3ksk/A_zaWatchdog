@@ -5,6 +5,7 @@ import { AccountService } from '../../core/account.service';
 import { ThemeService } from '../../core/theme.service';
 import { describeError } from '../../core/watchdog-api.service';
 import { compactGuid } from '../../core/guid';
+import { NewsBellComponent } from './news-bell.component';
 
 /**
  * The single bar across the top: identity, the lists, and the two actions.
@@ -16,7 +17,7 @@ import { compactGuid } from '../../core/guid';
 @Component({
   selector: 'app-navbar',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, RouterLink],
+  imports: [FormsModule, RouterLink, NewsBellComponent],
   templateUrl: './navbar.component.html',
   styleUrl: './navbar.component.scss',
 })

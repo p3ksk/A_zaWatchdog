@@ -16,6 +16,10 @@
         </label>
       }
 
+      @if (canAct()) {
+        <app-news-bell />
+      }
+
       <div class="group" role="group" aria-label="Account actions">
         @if (canAct()) {
           <button type="button" class="primary" (click)="watchRequested.emit()">+ Watch item</button>

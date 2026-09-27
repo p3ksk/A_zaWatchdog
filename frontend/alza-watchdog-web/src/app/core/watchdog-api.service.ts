@@ -10,6 +10,7 @@ import {
   AdminStats,
   AdminUser,
   ImportResult,
+  News,
   ProblemDetails,
   TrackedItem,
   WatchList,
@@ -44,6 +45,15 @@ export class WatchdogApi {
 
   clearEmail(): Observable<AccountResponse> {
     return this.http.delete<AccountResponse>('/api/users/email');
+  }
+
+  /** The newest reading of each product that changed since the bell was last opened. */
+  getNews(): Observable<News> {
+    return this.http.get<News>('/api/users/news');
+  }
+
+  markNewsSeen(throughSnapshotId: number): Observable<void> {
+    return this.http.post<void>('/api/users/news/seen', { throughSnapshotId });
   }
 
   getLists(): Observable<WatchList[]> {

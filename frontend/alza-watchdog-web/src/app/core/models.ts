@@ -53,11 +53,30 @@ export interface AccountResponse {
   hasAlzaPlus: boolean;
   /** Whether this key is listed under Admin:Keys in server configuration. */
   isAdmin: boolean;
-  /** Where price changes are mailed. Null when this account wants none. */
-  email: string | null;
+  /** Whether an address is on file. The address itself is never sent back. */
+  hasEmail: boolean;
   /** Mail only starts once the link sent to the address has been followed. */
   emailConfirmed: boolean;
   lists: WatchList[];
+}
+
+/** A product with a new reading since the bell was last opened — the newest one only. */
+export interface NewsItem {
+  itemId: string;
+  listId: string;
+  listName: string;
+  name: string | null;
+  url: string;
+  currency: string | null;
+  latest: PriceSnapshot;
+  /** The reading before `latest`, so the change can be shown. */
+  previous: PriceSnapshot | null;
+}
+
+export interface News {
+  /** Sent back when the bell is opened, to mark exactly this much as seen. */
+  throughSnapshotId: number;
+  items: NewsItem[];
 }
 
 /** RFC 7807 body returned by the API for every failure. */

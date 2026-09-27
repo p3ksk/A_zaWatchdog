@@ -7,29 +7,27 @@
       or availability moved. Nothing is sent when nothing changed.
     </p>
 
-    @if (saved(); as address) {
+    @if (saved()) {
       <div class="current" [class.pending]="!confirmed()">
         <div>
-          <code>{{ address }}</code>
+          <strong>An email address is set.</strong>
           <span class="state">
             @if (confirmed()) {
               Confirmed — notifications are on.
             } @else {
-              Waiting for the link in that inbox to be followed.
+              Waiting for the link in that inbox to be followed. Enter the address
+              again below to get a new link.
             }
           </span>
         </div>
         <div class="buttons">
-          @if (!confirmed()) {
-            <button type="button" (click)="resend()" [disabled]="busy()">Resend link</button>
-          }
           <button type="button" class="danger" (click)="remove()" [disabled]="busy()">Remove</button>
         </div>
       </div>
     }
 
     <form class="set" (ngSubmit)="save()">
-      <label for="notify-email">{{ saved() ? 'Use a different address' : 'Send alerts to' }}</label>
+      <label for="notify-email">{{ saved() ? 'Change address' : 'Send alerts to' }}</label>
       <div class="value">
         <input
           id="notify-email"

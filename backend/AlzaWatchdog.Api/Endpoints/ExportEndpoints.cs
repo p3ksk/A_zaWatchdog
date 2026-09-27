@@ -200,6 +200,14 @@ public static class ExportEndpoints
             }
         }
 
+        // Restored history is old news, however new its snapshot ids are, so the
+        // bell starts from after it rather than ringing for every past change.
+        if (snapshots > 0)
+        {
+            await db.SaveChangesAsync(ct);
+            user.SeenThroughSnapshotId = await db.PriceSnapshots.MaxAsync(s => (long?)s.Id, ct) ?? 0;
+        }
+
         await db.SaveChangesAsync(ct);
         return new ImportResultDto(imported, skipped, snapshots, notes);
     }
