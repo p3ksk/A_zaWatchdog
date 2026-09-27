@@ -1,4 +1,3 @@
-using System.Net;
 using System.Net.Mail;
 using System.Security.Cryptography;
 using AlzaWatchdog.Api.Admin;
@@ -359,22 +358,6 @@ public static class UserEndpoints
     /// it to — with no app loaded around it and nothing else on screen to explain
     /// what just happened.
     /// </summary>
-    private static IResult ConfirmationPage(string title, string detail, string? homeUrl)
-    {
-        var link = homeUrl is null
-            ? ""
-            : $"""<p><a href="{WebUtility.HtmlEncode(homeUrl)}">Back to your lists</a></p>""";
-
-        return Results.Content($"""
-            <!doctype html>
-            <html lang="en"><head><meta charset="utf-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1">
-            <title>{WebUtility.HtmlEncode(title)}</title></head>
-            <body style="font-family:system-ui,sans-serif;max-width:32rem;margin:4rem auto;padding:0 1rem;color:#191817">
-            <h1 style="font-size:1.4rem">{WebUtility.HtmlEncode(title)}</h1>
-            <p>{WebUtility.HtmlEncode(detail)}</p>
-            {link}
-            </body></html>
-            """, "text/html");
-    }
+    private static IResult ConfirmationPage(string title, string detail, string? homeUrl) =>
+        Results.Content(MailComposer.ConfirmationPage(title, detail, homeUrl), "text/html");
 }
