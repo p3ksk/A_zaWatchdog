@@ -1,14 +1,14 @@
-import { Injectable, inject } from '@angular/core';
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import {inject, Injectable} from '@angular/core';
+import {HttpClient, HttpErrorResponse} from '@angular/common/http';
+import {Observable} from 'rxjs';
 import {
   AccountImportResult,
   AccountResponse,
   AdminItem,
-  AdminWorker,
-  AdminWorkerSetting,
   AdminStats,
   AdminUser,
+  AdminWorker,
+  AdminWorkerSetting,
   ImportResult,
   News,
   ProblemDetails,
@@ -20,6 +20,11 @@ import {
 @Injectable({ providedIn: 'root' })
 export class WatchdogApi {
   private readonly http = inject(HttpClient);
+
+  /** The running build's version, shown in the footer. */
+  getVersion(): Observable<{ version: string }> {
+    return this.http.get<{ version: string }>('/api/version');
+  }
 
   createAccount(): Observable<AccountResponse> {
     return this.http.post<AccountResponse>('/api/users', {});

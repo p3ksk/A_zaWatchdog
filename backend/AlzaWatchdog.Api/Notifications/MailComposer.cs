@@ -93,6 +93,7 @@ public static class MailComposer
         }
 
         text.AppendLine("Stop these emails from Menu → Notifications.");
+        text.AppendLine().AppendLine(Colophon);
         footer.Append("Stop these emails from Menu → Notifications.");
 
         var html = Layout(
@@ -115,6 +116,8 @@ public static class MailComposer
 
             Nothing else will be sent until you do. If you did not ask for this,
             ignore this email — the address is dropped when the account expires.
+
+            {Colophon}
             """;
 
         var body = $"""
@@ -153,6 +156,8 @@ public static class MailComposer
         return Layout(title, title, body, null);
     }
 
+    private static string Colophon => $"© {DateTime.UtcNow.Year} Alza Watchdog · v{AppInfo.Version}";
+
     // The app's light "Ledger" palette. Mail clients cannot be relied on for dark
     // mode or custom properties, so the values are written out inline.
     private const string Paper = "#e8eef8";
@@ -186,6 +191,7 @@ public static class MailComposer
         {rows}
         {(footer is null ? "" : $"""<tr><td style="background:{Chrome};padding:14px 24px;border-top:1px solid {Rule};border-radius:0 0 3px 3px;font-size:12px;line-height:1.5;color:{InkDim}">{footer}</td></tr>""")}
         </table>
+        <div style="max-width:560px;padding:10px 0 0;font-family:{Sans};font-size:11px;color:{InkDim};text-align:center">{Escape(Colophon)}</div>
         </td></tr>
         </table>
         </body></html>

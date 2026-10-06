@@ -1,3 +1,4 @@
+using System.Net;
 using AlzaWatchdog.Api.Data;
 using AlzaWatchdog.Api.Domain;
 using AlzaWatchdog.Api.Notifications;
@@ -311,6 +312,16 @@ public class EmailNotificationTests : IDisposable
         Assert.Contains("(−10 %)", mail.TextBody);
         Assert.Contains("(+25 %)", mail.TextBody);
         Assert.Contains("https://watchdog.example.com/user/abc", mail.TextBody);
+    }
+
+    [Fact]
+    public void Mails_end_with_the_year_and_version()
+    {
+        var mail = MailComposer.Confirmation("to@example.com", "https://watchdog.example.com/confirm");
+        var colophon = $"© {DateTime.UtcNow.Year} Alza Watchdog · v1.0.0";
+
+        Assert.Contains(colophon, mail.TextBody);
+        Assert.Contains(WebUtility.HtmlEncode(colophon), mail.HtmlBody);
     }
 
     public void Dispose()

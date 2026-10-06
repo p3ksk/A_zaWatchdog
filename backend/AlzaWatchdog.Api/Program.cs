@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Security;
 using System.Security.Authentication;
+using AlzaWatchdog.Api;
 using AlzaWatchdog.Api.Admin;
 using AlzaWatchdog.Api.Auth;
 using AlzaWatchdog.Api.Data;
@@ -236,6 +237,8 @@ app.MapListEndpoints();
 app.MapExportEndpoints();
 app.MapAdminEndpoints();
 app.MapAdminBackupEndpoints();
+app.MapGet("/api/version", () => new { AppInfo.Version })
+    .WithSummary("The running build's version, for the page footer.");
 
 app.Run();
 
