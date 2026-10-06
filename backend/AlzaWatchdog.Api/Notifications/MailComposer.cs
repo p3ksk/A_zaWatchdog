@@ -5,16 +5,14 @@ using System.Text;
 namespace AlzaWatchdog.Api.Notifications;
 
 /// <summary>What one product did between the last reading someone was told about and this one.</summary>
+/// <param name="OldPrice">The least this person could pay before: shelf, code or members' price.</param>
+/// <param name="NewPrice">The least this person can pay now.</param>
 public record ProductChange(
     string Name,
     string Url,
     string? Currency,
     decimal? OldPrice,
     decimal? NewPrice,
-    decimal? OldCouponPrice,
-    decimal? NewCouponPrice,
-    decimal? OldPlusPrice,
-    decimal? NewPlusPrice,
     string? OldAvailability,
     string? NewAvailability);
 
@@ -240,14 +238,10 @@ public static class MailComposer
 
     private static IEnumerable<Move> Moves(ProductChange change)
     {
+        // One price, not one per offer: when Alza swaps a members' discount for a
+        // code, the reader cares what they now pay, not which offer went away.
         if (change.OldPrice != change.NewPrice)
-            yield return PriceMove("Price", change.OldPrice, change.NewPrice, change.Currency);
-
-        if (change.OldCouponPrice != change.NewCouponPrice)
-            yield return PriceMove("With code", change.OldCouponPrice, change.NewCouponPrice, change.Currency);
-
-        if (change.OldPlusPrice != change.NewPlusPrice)
-            yield return PriceMove("AlzaPlus+", change.OldPlusPrice, change.NewPlusPrice, change.Currency);
+            yield return PriceMove("Your price", change.OldPrice, change.NewPrice, change.Currency);
 
         if (change.OldAvailability != change.NewAvailability)
             yield return new Move(

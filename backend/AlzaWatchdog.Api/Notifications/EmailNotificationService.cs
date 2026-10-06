@@ -143,12 +143,8 @@ public class EmailNotificationService(
                 product.Name ?? product.CanonicalUrl,
                 product.CanonicalUrl,
                 product.Currency,
-                before.Price, after.Price,
-                before.CouponPrice, after.CouponPrice,
-                // A members' price is only a price to a member; for everyone else
-                // it would be a mail about money they cannot save.
-                user.HasAlzaPlus ? before.PlusPrice : null,
-                user.HasAlzaPlus ? after.PlusPrice : null,
+                Payable(before, user.HasAlzaPlus),
+                Payable(after, user.HasAlzaPlus),
                 before.Availability, after.Availability);
 
             if (MailComposer.Lines(change).Any())
@@ -157,6 +153,14 @@ public class EmailNotificationService(
 
         return changes;
     }
+
+    /// <summary>
+    /// The least this person can pay for a reading — the same rule as the
+    /// frontend's <c>payable()</c>. The offers are alternatives, not discounts that
+    /// stack, and a members' price is only a price to a member.
+    /// </summary>
+    private static decimal? Payable(PriceSnapshot snapshot, bool hasAlzaPlus) =>
+        new[] { snapshot.Price, snapshot.CouponPrice, hasAlzaPlus ? snapshot.PlusPrice : null }.Min();
 
     /// <summary>
     /// The bookmarkable link to this account's lists, matching the route the

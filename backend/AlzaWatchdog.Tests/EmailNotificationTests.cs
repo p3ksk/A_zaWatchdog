@@ -91,13 +91,14 @@ public class EmailNotificationTests : IDisposable
     /// <summary>Appends a reading and returns its id, which is what watermarks are measured in.</summary>
     private long AddSnapshot(
         Product product, decimal? price, string availability = "InStock",
-        decimal? plusPrice = null, int minutesLater = 0)
+        decimal? plusPrice = null, decimal? couponPrice = null, int minutesLater = 0)
     {
         var snapshot = new PriceSnapshot
         {
             ProductId = product.Id,
             Price = price,
             PlusPrice = plusPrice,
+            CouponPrice = couponPrice,
             Availability = availability,
             CapturedAt = Now.AddMinutes(minutesLater),
         };
@@ -243,7 +244,24 @@ public class EmailNotificationTests : IDisposable
 
         var mail = Assert.Single(_sender.Sent);
         Assert.Equal("member@example.com", mail.To);
-        Assert.Contains("AlzaPlus+: 18.90 € → 16.90 €", mail.TextBody);
+        Assert.Contains("Your price: 18.90 € → 16.90 €", mail.TextBody);
+    }
+
+    [Fact]
+    public async Task Reports_a_swapped_discount_as_one_move_in_what_the_reader_pays()
+    {
+        var user = AddUser(hasPlus: true);
+        var product = AddProduct(user);
+        AddSnapshot(product, 17.90m, plusPrice: 16.11m);
+        MarkCaughtUp(user);
+        AddSnapshot(product, 17.90m, couponPrice: 15.22m, minutesLater: 60);
+
+        await Service().SendPendingAsync();
+
+        var mail = Assert.Single(_sender.Sent);
+        Assert.Contains("Your price: 16.11 € → 15.22 €", mail.TextBody);
+        Assert.DoesNotContain("AlzaPlus+", mail.TextBody);
+        Assert.DoesNotContain("With code", mail.TextBody);
     }
 
     [Fact]
@@ -283,8 +301,8 @@ public class EmailNotificationTests : IDisposable
     {
         var changes = new[]
         {
-            new ProductChange("A", "https://a", "EUR", 10m, 9m, null, null, null, null, "InStock", "InStock"),
-            new ProductChange("B", "https://b", "EUR", 20m, 25m, null, null, null, null, "InStock", "OutOfStock"),
+            new ProductChange("A", "https://a", "EUR", 10m, 9m, "InStock", "InStock"),
+            new ProductChange("B", "https://b", "EUR", 20m, 25m, "InStock", "OutOfStock"),
         };
 
         var mail = MailComposer.Digest("to@example.com", "https://watchdog.example.com/user/abc", changes);
