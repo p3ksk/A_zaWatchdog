@@ -1,4 +1,5 @@
 import {ChangeDetectionStrategy, Component, computed, inject, signal} from '@angular/core';
+import {DatePipe} from '@angular/common';
 import {firstValueFrom} from 'rxjs';
 import {AccountService} from '../../core/account.service';
 import {
@@ -39,7 +40,7 @@ function fold(value: string): string {
 @Component({
   selector: 'app-admin-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [PriceChartComponent, TipComponent, PaginatorComponent],
+  imports: [DatePipe, PriceChartComponent, TipComponent, PaginatorComponent],
   templateUrl: './admin-page.component.html',
   styleUrl: './admin-page.component.scss',
 })

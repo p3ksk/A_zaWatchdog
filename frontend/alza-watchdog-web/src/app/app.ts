@@ -1,5 +1,6 @@
 import {ChangeDetectionStrategy, Component, computed, inject, viewChild} from '@angular/core';
 import {toSignal} from '@angular/core/rxjs-interop';
+import {RouterOutlet} from '@angular/router';
 import {catchError, map, of} from 'rxjs';
 import {ItemsStore} from './core/items.store';
 import {WatchdogApi} from './core/watchdog-api.service';
@@ -19,6 +20,7 @@ import {BookmarkNoticeComponent} from './features/shell/bookmark-notice.componen
   selector: 'app-root',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    RouterOutlet,
     NavbarComponent,
     BookmarkNoticeComponent,
     AddItemDialogComponent,
