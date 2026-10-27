@@ -4,7 +4,6 @@ using AlzaWatchdog.Api.Admin;
 using AlzaWatchdog.Api.Auth;
 using AlzaWatchdog.Api.Contracts;
 using AlzaWatchdog.Api.Data;
-using AlzaWatchdog.Api.Domain;
 using AlzaWatchdog.Api.Workers;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
@@ -87,7 +86,7 @@ public static class AdminEndpoints
                     new("Products due now", dueNow.ToString(),
                         "Active products whose last check is older than the check interval. This is what the next sweep will fetch, so it should fall to zero after a clean pass."),
                     new("Paused products", paused.ToString(),
-                        "Products deactivated after too many failures in a row. They are skipped entirely until someone resumes them."),
+                        "Products deactivated after too many failures in a row, or paused by an admin. They are skipped entirely until resumed."),
                 ],
                 [AccountCleanupWorker.WorkerName] =
                 [
@@ -177,9 +176,35 @@ public static class AdminEndpoints
                 i.Product.LastError,
                 i.Product.ConsecutiveFailures,
                 i.Product.IsActive,
+                i.Product.PausedByAdmin,
                 snapshots.GetValueOrDefault(i.ProductId) ?? [])));
         })
         .WithName("AdminItems");
+
+        group.MapPut("/products/{productCode}/paused", async (
+            string productCode, SetProductPausedRequest request, AppDbContext db, CancellationToken ct) =>
+        {
+            var product = await db.Products.FirstOrDefaultAsync(p => p.ProductCode == productCode, ct);
+
+            if (product is null)
+                return Results.NotFound();
+
+            product.PausedByAdmin = request.Paused;
+            product.IsActive = !request.Paused;
+
+            // Resuming is a fresh start, as it is for a watcher: otherwise one more
+            // failure would pause a product that had been paused for its failures.
+            if (!request.Paused)
+            {
+                product.ConsecutiveFailures = 0;
+                product.LastError = null;
+            }
+
+            await db.SaveChangesAsync(ct);
+            return Results.NoContent();
+        })
+        .WithName("AdminSetProductPaused")
+        .WithSummary("Takes a product out of the price sweep, or puts it back, for every list watching it.");
     }
 
     /// <summary>"3h 30m", "2d 4h", "45s" — the two largest units are enough to read at a glance.</summary>

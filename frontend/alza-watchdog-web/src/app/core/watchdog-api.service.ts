@@ -122,6 +122,11 @@ export class WatchdogApi {
     return this.http.get<AdminItem[]>('/api/admin/items');
   }
 
+  /** Takes a product out of the price sweep, or puts it back, for every list watching it. */
+  setProductPaused(productCode: string, paused: boolean): Observable<void> {
+    return this.http.put<void>(`/api/admin/products/${productCode}/paused`, { paused });
+  }
+
   exportProducts(): Observable<Blob> {
     return this.http.get('/api/export', { responseType: 'blob' });
   }

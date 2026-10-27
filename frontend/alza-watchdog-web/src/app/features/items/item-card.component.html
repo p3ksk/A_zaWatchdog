@@ -85,7 +85,11 @@
       <a class="foot-link" [href]="it.url" target="_blank" rel="noopener noreferrer">Open on alza.sk</a>
     </div>
 
-    @if (!it.isActive) {
+    @if (it.pausedByAdmin) {
+      <p class="alert">
+        <strong>Price checks paused by the administrator.</strong>
+      </p>
+    } @else if (!it.isActive) {
       <p class="alert">
         <strong>Paused after repeated failures.</strong>
         @if (it.lastError) {
@@ -100,7 +104,7 @@
     }
 
     <div class="detail-actions">
-      @if (!it.isActive) {
+      @if (!it.isActive && !it.pausedByAdmin) {
         <button type="button" (click)="resumeRequested.emit()" [disabled]="busy()">
           {{ busy() ? 'Working…' : 'Resume watching' }}
         </button>

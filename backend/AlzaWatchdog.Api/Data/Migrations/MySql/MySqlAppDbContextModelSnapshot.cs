@@ -107,6 +107,9 @@ namespace AlzaWatchdog.Api.Data.Migrations.MySql
                         .HasMaxLength(512)
                         .HasColumnType("varchar(512)");
 
+                    b.Property<bool>("PausedByAdmin")
+                        .HasColumnType("tinyint(1)");
+
                     b.Property<string>("ProductCode")
                         .IsRequired()
                         .HasMaxLength(32)

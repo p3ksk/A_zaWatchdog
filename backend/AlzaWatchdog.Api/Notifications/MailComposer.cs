@@ -244,12 +244,21 @@ public static class MailComposer
 
     private static IEnumerable<Move> Moves(ProductChange change)
     {
+        var stockMoved = change.OldAvailability != change.NewAvailability;
+
         // One price, not one per offer: when Alza swaps a members' discount for a
         // code, the reader cares what they now pay, not which offer went away.
-        if (change.OldPrice != change.NewPrice)
+        //
+        // A price that appears or vanishes together with the stock state is the
+        // stock moving, not the price: Alza drops the price from a product it
+        // cannot sell, and "→ no price" beside "→ Out of stock" says it twice.
+        var priceMoved = change.OldPrice != change.NewPrice
+                         && !(stockMoved && (change.OldPrice is null || change.NewPrice is null));
+
+        if (priceMoved)
             yield return PriceMove("Your price", change.OldPrice, change.NewPrice, change.Currency);
 
-        if (change.OldAvailability != change.NewAvailability)
+        if (stockMoved)
             yield return new Move(
                 "Availability",
                 Stock(change.OldAvailability),

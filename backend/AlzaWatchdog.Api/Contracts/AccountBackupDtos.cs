@@ -49,7 +49,9 @@ public record BackupItem(
     int ConsecutiveFailures,
     bool IsActive,
     DateTimeOffset CreatedAt,
-    IReadOnlyList<PriceSnapshotDto> Snapshots);
+    IReadOnlyList<PriceSnapshotDto> Snapshots,
+    // Last and defaulted, so backups written before it existed still import.
+    bool PausedByAdmin = false);
 
 public record AccountImportResultDto(
     int AccountsImported,

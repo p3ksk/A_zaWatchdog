@@ -327,6 +327,12 @@ public static class ListEndpoints
             if (item is null)
                 return Results.NotFound();
 
+            // An admin's pause is not a failure a watcher can clear.
+            if (item.Product.PausedByAdmin)
+                return Results.Problem(
+                    "This product was paused by the administrator.",
+                    statusCode: StatusCodes.Status409Conflict);
+
             // Deliberately does not scrape. Resuming only puts the product back into
             // the sweep, which will reach it in its own time — nothing a person
             // clicks should be able to generate traffic to alza.sk on demand.
@@ -463,6 +469,7 @@ public static class ListEndpoints
                 product.LastCheckedAt,
                 product.LastError,
                 product.IsActive,
+                product.PausedByAdmin,
                 item.SortOrder,
                 item.CreatedAt,
                 history
