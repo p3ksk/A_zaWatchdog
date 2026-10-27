@@ -47,6 +47,38 @@ export function payable(quote: PriceQuote, hasAlzaPlus: boolean): PayablePrice {
   return { value: best.price, shelf: quote.price, via: best.label };
 }
 
+/** A quote together with the stock state it was read in. */
+export type StockedQuote = PriceQuote & { availability: string | null };
+
+/**
+ * The payable price of two readings, measured so that a stock move does not
+ * read as a price move — the same rule the server applies to mails.
+ *
+ * Alza leaves offers off the page when the stock state changes: an unavailable
+ * product can lose its price, or just its AlzaPlus+ price, and get it back when
+ * it returns. So across a stock move only the offers present on both sides count.
+ */
+export function comparablePrices(
+  before: StockedQuote,
+  after: StockedQuote,
+  hasAlzaPlus: boolean,
+): [number | null, number | null] {
+  if (before.availability === after.availability) {
+    return [payable(before, hasAlzaPlus).value, payable(after, hasAlzaPlus).value];
+  }
+
+  const shared = (q: PriceQuote, other: PriceQuote): PriceQuote => ({
+    price: other.price === null ? null : q.price,
+    plusPrice: other.plusPrice === null ? null : q.plusPrice,
+    couponPrice: other.couponPrice === null ? null : q.couponPrice,
+  });
+
+  return [
+    payable(shared(before, after), hasAlzaPlus).value,
+    payable(shared(after, before), hasAlzaPlus).value,
+  ];
+}
+
 /** The live prices on a tracked item, in the shape {@link payable} expects. */
 export function quoteOf(item: TrackedItem): PriceQuote {
   return { price: item.currentPrice, plusPrice: item.plusPrice, couponPrice: item.couponPrice };
@@ -78,11 +110,14 @@ export function priceStats(item: TrackedItem, hasAlzaPlus: boolean): PriceStats 
   // The price this item moved away from: the newest earlier reading at a
   // different price. A snapshot is also written when only the stock state moves,
   // and stepping back just one row would then report no change at all.
+  const live: StockedQuote = { ...quoteOf(item), availability: item.availability };
   let previous: number | null = null;
+  let change: number | null = null;
   for (let i = item.history.length - 2; i >= 0; i--) {
-    const value = payable(item.history[i], hasAlzaPlus).value;
-    if (value !== null && value !== now.value) {
-      previous = value;
+    const [then, current] = comparablePrices(item.history[i], live, hasAlzaPlus);
+    if (then !== null && current !== null && then !== current) {
+      previous = then;
+      change = current - then;
       break;
     }
   }
@@ -93,7 +128,7 @@ export function priceStats(item: TrackedItem, hasAlzaPlus: boolean): PriceStats 
   return {
     ...now,
     previous,
-    change: now.value !== null && previous !== null ? now.value - previous : null,
+    change,
     lowest,
     highest,
     isAtLowest: now.value !== null && lowest !== null && now.value === lowest && item.history.length > 1,

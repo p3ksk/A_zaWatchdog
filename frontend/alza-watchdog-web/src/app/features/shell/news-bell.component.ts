@@ -1,12 +1,11 @@
-import { ChangeDetectionStrategy, Component, ElementRef, computed, inject, signal, viewChild } from '@angular/core';
-import { RouterLink } from '@angular/router';
-import { AccountService } from '../../core/account.service';
-import { ClockService } from '../../core/clock.service';
-import { formatAvailability, formatExact, formatPrice, formatRelative } from '../../core/format';
-import { compactGuid } from '../../core/guid';
-import { NewsItem } from '../../core/models';
-import { NewsService } from '../../core/news.service';
-import { payableAt } from '../../core/pricing';
+import {ChangeDetectionStrategy, Component, computed, ElementRef, inject, signal, viewChild} from '@angular/core';
+import {AccountService} from '../../core/account.service';
+import {ClockService} from '../../core/clock.service';
+import {formatAvailability, formatExact, formatPrice, formatRelative} from '../../core/format';
+import {compactGuid} from '../../core/guid';
+import {NewsItem} from '../../core/models';
+import {NewsService} from '../../core/news.service';
+import {comparablePrices, payableAt} from '../../core/pricing';
 
 interface NewsRow {
   item: NewsItem;
@@ -27,7 +26,7 @@ interface NewsRow {
 @Component({
   selector: 'app-news-bell',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink],
+  imports: [],
   templateUrl: './news-bell.component.html',
   styleUrl: './news-bell.component.scss',
 })
@@ -48,8 +47,10 @@ export class NewsBellComponent {
 
     return this.shown().map((item) => {
       const now = payableAt(item.latest, hasAlzaPlus);
-      const before = item.previous ? payableAt(item.previous, hasAlzaPlus) : null;
-      const delta = now !== null && before !== null ? now - before : 0;
+      const [before, after] = item.previous
+        ? comparablePrices(item.previous, item.latest, hasAlzaPlus)
+        : [null, null];
+      const delta = before !== null && after !== null ? after - before : 0;
       const availabilityMoved = item.previous !== null && item.previous.availability !== item.latest.availability;
 
       return {

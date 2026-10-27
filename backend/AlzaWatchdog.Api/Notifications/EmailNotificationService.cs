@@ -139,12 +139,14 @@ public class EmailNotificationService(
 
             var after = pending.Last(s => s.ProductId == productId);
 
+            var (oldPrice, newPrice) = ComparablePrices(before, after, user.HasAlzaPlus);
+
             var change = new ProductChange(
                 product.Name ?? product.CanonicalUrl,
                 product.CanonicalUrl,
                 product.Currency,
-                Payable(before, user.HasAlzaPlus),
-                Payable(after, user.HasAlzaPlus),
+                oldPrice,
+                newPrice,
                 before.Availability, after.Availability);
 
             if (MailComposer.Lines(change).Any())
@@ -159,8 +161,36 @@ public class EmailNotificationService(
     /// frontend's <c>payable()</c>. The offers are alternatives, not discounts that
     /// stack, and a members' price is only a price to a member.
     /// </summary>
-    private static decimal? Payable(PriceSnapshot snapshot, bool hasAlzaPlus) =>
-        new[] { snapshot.Price, snapshot.CouponPrice, hasAlzaPlus ? snapshot.PlusPrice : null }.Min();
+    private static decimal? Payable(decimal? price, decimal? couponPrice, decimal? plusPrice, bool hasAlzaPlus) =>
+        new[] { price, couponPrice, hasAlzaPlus ? plusPrice : null }.Min();
+
+    /// <summary>
+    /// The payable price of two readings, measured so that a stock move does not
+    /// read as a price move — the same rule as the frontend's <c>comparablePrices()</c>.
+    ///
+    /// Alza leaves offers off the page when the stock state changes: an
+    /// unavailable product can lose its price, or just its AlzaPlus+ price, and
+    /// get it back when it returns. So across a stock move only the offers present
+    /// on both sides are compared.
+    /// </summary>
+    internal static (decimal? Before, decimal? After) ComparablePrices(
+        PriceSnapshot before, PriceSnapshot after, bool hasAlzaPlus)
+    {
+        if (before.Availability == after.Availability)
+        {
+            return (
+                Payable(before.Price, before.CouponPrice, before.PlusPrice, hasAlzaPlus),
+                Payable(after.Price, after.CouponPrice, after.PlusPrice, hasAlzaPlus));
+        }
+
+        static decimal? Shared(decimal? value, decimal? other) => other is null ? null : value;
+
+        return (
+            Payable(Shared(before.Price, after.Price), Shared(before.CouponPrice, after.CouponPrice),
+                Shared(before.PlusPrice, after.PlusPrice), hasAlzaPlus),
+            Payable(Shared(after.Price, before.Price), Shared(after.CouponPrice, before.CouponPrice),
+                Shared(after.PlusPrice, before.PlusPrice), hasAlzaPlus));
+    }
 
     /// <summary>
     /// The bookmarkable link to this account's lists, matching the route the

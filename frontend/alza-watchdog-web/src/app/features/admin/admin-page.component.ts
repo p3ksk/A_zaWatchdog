@@ -1,5 +1,4 @@
 import {ChangeDetectionStrategy, Component, computed, inject, signal} from '@angular/core';
-import {DatePipe} from '@angular/common';
 import {firstValueFrom} from 'rxjs';
 import {AccountService} from '../../core/account.service';
 import {
@@ -14,7 +13,7 @@ import {
 import {describeError, WatchdogApi} from '../../core/watchdog-api.service';
 import {compactGuid} from '../../core/guid';
 import {formatPrice, formatRelative} from '../../core/format';
-import {payable} from '../../core/pricing';
+import {comparablePrices, payable} from '../../core/pricing';
 import {PriceChartComponent} from '../items/price-chart.component';
 import {TipComponent} from '../../shared/tip.component';
 import {PaginatorComponent} from '../../shared/paginator.component';
@@ -40,7 +39,7 @@ function fold(value: string): string {
 @Component({
   selector: 'app-admin-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe, PriceChartComponent, TipComponent, PaginatorComponent],
+  imports: [PriceChartComponent, TipComponent, PaginatorComponent],
   templateUrl: './admin-page.component.html',
   styleUrl: './admin-page.component.scss',
 })
@@ -235,17 +234,19 @@ export class AdminPageComponent {
       (a, b) => new Date(a.capturedAt).getTime() - new Date(b.capturedAt).getTime(),
     );
 
-    let previous: number | null = null;
-    const rows = oldestFirst.map((snap) => {
-      const value = payable(snap, true).value;
-      // A row that only records a stock move has no price change to show.
+    // Measured against the row before it, through the same rule as the mails:
+    // a row that only records a stock move has no price change to show.
+    const rows = oldestFirst.map((snap, i) => {
+      if (i === 0) {
+        return { snap, changePct: null, first: true };
+      }
+
+      const [before, after] = comparablePrices(oldestFirst[i - 1], snap, true);
       const changePct =
-        previous !== null && previous !== 0 && value !== null && value !== previous
-          ? Math.round(((value - previous) / previous) * 100)
+        before !== null && before !== 0 && after !== null && after !== before
+          ? Math.round(((after - before) / before) * 100)
           : null;
-      const row = { snap, changePct, first: previous === null };
-      previous = value ?? previous;
-      return row;
+      return { snap, changePct, first: false };
     });
 
     return rows.reverse();

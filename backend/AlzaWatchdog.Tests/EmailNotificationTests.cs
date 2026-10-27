@@ -298,6 +298,41 @@ public class EmailNotificationTests : IDisposable
     }
 
     [Fact]
+    public async Task Does_not_count_a_members_price_that_flickers_with_the_stock_state()
+    {
+        // AlzaPower BigFoot: the AlzaPlus+ price is missing from every
+        // "Discontinued" reading and back on every "In stock" one, while the shelf
+        // price never moves.
+        var user = AddUser(hasPlus: true);
+        var product = AddProduct(user);
+        AddSnapshot(product, 99m, availability: "Discontinued");
+        MarkCaughtUp(user);
+        AddSnapshot(product, 99m, plusPrice: 89.10m, minutesLater: 60);
+
+        await Service().SendPendingAsync();
+
+        var mail = Assert.Single(_sender.Sent);
+        Assert.Contains("Availability: Discontinued → In stock", mail.TextBody);
+        Assert.DoesNotContain("Your price", mail.TextBody);
+    }
+
+    [Fact]
+    public async Task Still_reports_a_real_price_move_alongside_a_stock_move()
+    {
+        var user = AddUser();
+        var product = AddProduct(user);
+        AddSnapshot(product, 99m, availability: "OutOfStock");
+        MarkCaughtUp(user);
+        AddSnapshot(product, 89m, minutesLater: 60);
+
+        await Service().SendPendingAsync();
+
+        var mail = Assert.Single(_sender.Sent);
+        Assert.Contains("Your price: 99.00 € → 89.00 €", mail.TextBody);
+        Assert.Contains("Availability: Out of stock → In stock", mail.TextBody);
+    }
+
+    [Fact]
     public async Task Sends_nothing_when_the_server_has_no_mail_account()
     {
         var user = AddUser();
