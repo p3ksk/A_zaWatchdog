@@ -97,9 +97,15 @@
                       · watched by {{ group.trackedBy.length }}
                         {{ group.trackedBy.length === 1 ? 'list' : 'lists' }}
                       · checked {{ ago(item.lastCheckedAt) }}
-                      @if (!item.isActive) {
+                      @if (item.pausedByAdmin) {
+                        · <span class="bad">paused by admin</span>
+                      } @else if (!item.isActive) {
                         · <span class="bad">paused after {{ item.consecutiveFailures }} failures</span>
                       }
+                      ·
+                      <button type="button" class="bare" (click)="setPaused(item, item.isActive)" [disabled]="busy()">
+                        {{ item.isActive ? 'pause checks' : 'resume checks' }}
+                      </button>
                     </p>
                     @if (item.lastError) {
                       <p class="meta bad">{{ item.lastError }}</p>

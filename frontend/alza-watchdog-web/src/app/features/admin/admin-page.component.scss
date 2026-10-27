@@ -268,6 +268,11 @@ section {
     color: var(--accent);
   }
 
+  /* Sits in the mono line as a word, not as a control. */
+  .bare {
+    font: inherit;
+  }
+
   &.bad {
     color: var(--red);
   }

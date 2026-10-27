@@ -40,6 +40,12 @@ public class Product
     /// <summary>Cleared after too many consecutive failures so we stop hammering a dead URL.</summary>
     public bool IsActive { get; set; } = true;
 
+    /// <summary>
+    /// Taken out of the sweep by an admin rather than by failures. Keeps
+    /// <see cref="IsActive"/> cleared, and stops a watcher's "resume" undoing it.
+    /// </summary>
+    public bool PausedByAdmin { get; set; }
+
     public DateTimeOffset CreatedAt { get; set; }
 
     public List<PriceSnapshot> Snapshots { get; set; } = [];

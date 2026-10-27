@@ -1,7 +1,6 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { DatePipe } from '@angular/common';
-import { firstValueFrom } from 'rxjs';
-import { AccountService } from '../../core/account.service';
+import {ChangeDetectionStrategy, Component, computed, inject, signal} from '@angular/core';
+import {firstValueFrom} from 'rxjs';
+import {AccountService} from '../../core/account.service';
 import {
   AccountImportResult,
   AdminItem,
@@ -11,13 +10,13 @@ import {
   AdminWorkerSetting,
   PriceSnapshot,
 } from '../../core/models';
-import { WatchdogApi, describeError } from '../../core/watchdog-api.service';
-import { compactGuid } from '../../core/guid';
-import { formatPrice, formatRelative } from '../../core/format';
-import { payable } from '../../core/pricing';
-import { PriceChartComponent } from '../items/price-chart.component';
-import { TipComponent } from '../../shared/tip.component';
-import { PaginatorComponent } from '../../shared/paginator.component';
+import {describeError, WatchdogApi} from '../../core/watchdog-api.service';
+import {compactGuid} from '../../core/guid';
+import {formatPrice, formatRelative} from '../../core/format';
+import {payable} from '../../core/pricing';
+import {PriceChartComponent} from '../items/price-chart.component';
+import {TipComponent} from '../../shared/tip.component';
+import {PaginatorComponent} from '../../shared/paginator.component';
 
 type AdminTab = 'products' | 'accounts' | 'workers' | 'status' | 'backup';
 
@@ -40,7 +39,7 @@ function fold(value: string): string {
 @Component({
   selector: 'app-admin-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe, PriceChartComponent, TipComponent, PaginatorComponent],
+  imports: [PriceChartComponent, TipComponent, PaginatorComponent],
   templateUrl: './admin-page.component.html',
   styleUrl: './admin-page.component.scss',
 })
@@ -238,8 +237,9 @@ export class AdminPageComponent {
     let previous: number | null = null;
     const rows = oldestFirst.map((snap) => {
       const value = payable(snap, true).value;
+      // A row that only records a stock move has no price change to show.
       const changePct =
-        previous !== null && previous !== 0 && value !== null
+        previous !== null && previous !== 0 && value !== null && value !== previous
           ? Math.round(((value - previous) / previous) * 100)
           : null;
       const row = { snap, changePct, first: previous === null };
@@ -279,6 +279,31 @@ export class AdminPageComponent {
   /** Blocks and failures are worth colouring; "checked 4 products" is not. */
   protected isBadOutcome(outcome: string): boolean {
     return /blocked|failed/i.test(outcome);
+  }
+
+  protected async setPaused(item: AdminItem, paused: boolean): Promise<void> {
+    this.busy.set(true);
+    this.error.set(null);
+
+    try {
+      await firstValueFrom(this.api.setProductPaused(item.productCode, paused));
+
+      // The flag is the product's, so every row for that product changes with it.
+      // Resuming clears the failure state the same way the server does.
+      this.items.update((items) =>
+        items.map((i) =>
+          i.productCode !== item.productCode
+            ? i
+            : paused
+              ? { ...i, pausedByAdmin: true, isActive: false }
+              : { ...i, pausedByAdmin: false, isActive: true, consecutiveFailures: 0, lastError: null },
+        ),
+      );
+    } catch (error) {
+      this.error.set(describeError(error, paused ? 'Could not pause that product.' : 'Could not resume that product.'));
+    } finally {
+      this.busy.set(false);
+    }
   }
 
   protected toggleItem(id: string): void {

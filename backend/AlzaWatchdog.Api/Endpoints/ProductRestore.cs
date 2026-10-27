@@ -19,7 +19,8 @@ internal readonly record struct ProductFacts(
     string? LastError,
     int ConsecutiveFailures,
     bool IsActive,
-    DateTimeOffset CreatedAt);
+    DateTimeOffset CreatedAt,
+    bool PausedByAdmin = false);
 
 internal static class ProductRestore
 {
@@ -66,6 +67,7 @@ internal static class ProductRestore
             LastError = facts.LastError,
             ConsecutiveFailures = facts.ConsecutiveFailures,
             IsActive = facts.IsActive,
+            PausedByAdmin = facts.PausedByAdmin,
             CreatedAt = facts.CreatedAt,
         };
 

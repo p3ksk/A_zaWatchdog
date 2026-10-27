@@ -277,8 +277,24 @@ public class EmailNotificationTests : IDisposable
         await Service().SendPendingAsync();
 
         var mail = Assert.Single(_sender.Sent);
-        Assert.Contains("1,309.00 € → no price", mail.TextBody);
         Assert.Contains("Availability: In stock → Discontinued", mail.TextBody);
+        Assert.DoesNotContain("no price", mail.TextBody);
+    }
+
+    [Fact]
+    public async Task Reports_a_move_out_of_stock_without_a_price_line()
+    {
+        var user = AddUser();
+        var product = AddProduct(user);
+        AddSnapshot(product, 19.90m);
+        MarkCaughtUp(user);
+        AddSnapshot(product, 19.90m, availability: "OutOfStock", minutesLater: 60);
+
+        await Service().SendPendingAsync();
+
+        var mail = Assert.Single(_sender.Sent);
+        Assert.Contains("Availability: In stock → Out of stock", mail.TextBody);
+        Assert.DoesNotContain("Your price", mail.TextBody);
     }
 
     [Fact]

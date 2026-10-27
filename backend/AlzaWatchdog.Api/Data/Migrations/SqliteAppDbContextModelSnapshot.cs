@@ -100,6 +100,9 @@ namespace AlzaWatchdog.Api.Data.Migrations
                         .HasMaxLength(512)
                         .HasColumnType("TEXT");
 
+                    b.Property<bool>("PausedByAdmin")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("ProductCode")
                         .IsRequired()
                         .HasMaxLength(32)

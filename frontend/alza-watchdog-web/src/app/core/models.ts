@@ -23,6 +23,8 @@ export interface TrackedItem {
   lastCheckedAt: string | null;
   lastError: string | null;
   isActive: boolean;
+  /** Taken out of the sweep by an admin; a watcher cannot resume it. */
+  pausedByAdmin: boolean;
   /** Position in the user's manual order. Zero-based; ties fall back to creation order. */
   sortOrder: number;
   createdAt: string;
@@ -122,6 +124,7 @@ export interface AdminItem {
   lastError: string | null;
   consecutiveFailures: number;
   isActive: boolean;
+  pausedByAdmin: boolean;
   snapshots: PriceSnapshot[];
 }
 

@@ -26,7 +26,10 @@ public record AdminItemDto(
     string? LastError,
     int ConsecutiveFailures,
     bool IsActive,
+    bool PausedByAdmin,
     IReadOnlyList<PriceSnapshotDto> Snapshots);
+
+public record SetProductPausedRequest(bool Paused);
 
 public record AdminWorkerSettingDto(string Label, string Value, string? Hint);
 

@@ -119,7 +119,8 @@ public static class AdminBackupEndpoints
                         i.Product.ConsecutiveFailures,
                         i.Product.IsActive,
                         i.CreatedAt,
-                        snapshots.GetValueOrDefault(i.ProductId) ?? [])).ToList())).ToList(),
+                        snapshots.GetValueOrDefault(i.ProductId) ?? [],
+                        i.Product.PausedByAdmin)).ToList())).ToList(),
                 u.Email,
                 u.EmailConfirmedAt)).ToList());
     }
@@ -174,7 +175,7 @@ public static class AdminBackupEndpoints
                         item.ProductCode, item.CanonicalUrl, item.Name, item.ImageUrl, item.Currency,
                         item.LastPrice, item.LastPlusPrice, item.LastCouponPrice, item.LastAvailability,
                         item.LastCheckedAt, item.LastError, item.ConsecutiveFailures, item.IsActive,
-                        item.CreatedAt), ct);
+                        item.CreatedAt, item.PausedByAdmin), ct);
 
                     db.TrackedItems.Add(new TrackedItem
                     {

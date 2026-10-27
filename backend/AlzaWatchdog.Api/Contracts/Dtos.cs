@@ -75,6 +75,7 @@ public record TrackedItemDto(
     DateTimeOffset? LastCheckedAt,
     string? LastError,
     bool IsActive,
+    bool PausedByAdmin,
     /// <summary>Position in the user's manual order. Zero-based; ties fall back to creation order.</summary>
     int SortOrder,
     DateTimeOffset CreatedAt,

@@ -1,4 +1,4 @@
-import { PriceSnapshot, TrackedItem } from './models';
+import {PriceSnapshot, TrackedItem} from './models';
 
 /**
  * Alza can quote three prices for one product, and they are alternatives rather
@@ -53,7 +53,7 @@ export function quoteOf(item: TrackedItem): PriceQuote {
 }
 
 export interface PriceStats extends PayablePrice {
-  /** The payable price before the most recent change. */
+  /** The payable price before the most recent price change; stock-only readings are skipped. */
   previous: number | null;
   /** Positive when it rose, negative on a drop, null when there is nothing to compare. */
   change: number | null;
@@ -75,10 +75,17 @@ export function priceStats(item: TrackedItem, hasAlzaPlus: boolean): PriceStats 
     .map((snapshot) => payable(snapshot, hasAlzaPlus).value)
     .filter((value): value is number => value !== null);
 
-  // The row before the newest one holds the price this item moved away from.
-  const previous = item.history.length > 1
-    ? payable(item.history[item.history.length - 2], hasAlzaPlus).value
-    : null;
+  // The price this item moved away from: the newest earlier reading at a
+  // different price. A snapshot is also written when only the stock state moves,
+  // and stepping back just one row would then report no change at all.
+  let previous: number | null = null;
+  for (let i = item.history.length - 2; i >= 0; i--) {
+    const value = payable(item.history[i], hasAlzaPlus).value;
+    if (value !== null && value !== now.value) {
+      previous = value;
+      break;
+    }
+  }
 
   const lowest = series.length > 0 ? Math.min(...series) : null;
   const highest = series.length > 0 ? Math.max(...series) : null;
